@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>极速反应网格 - 强化版</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --grid-color: #1e1e1e;
+            --active-color: #00f2ff;
+            --text-color: #ffffff;
+            --accent-color: #ff00ea;
+            --error-color: #ff3b3b;
+            --score-color: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.1s ease;
+        }
+
+        body.error-flash {
+            background-color: #400;
+        }
+
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            text-align: center;
+            width: 100%;
+            z-index: 5;
+        }
+
+        h1 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0.7;
+        }
+
+        #stats {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .stat-item span {
+            color: var(--active-color);
+            font-weight: bold;
+        }
+
+        #score-display {
+            font-size: 2.5rem;
+            color: var(--score-color);
+            font-weight: 800;
+            margin: 10px 0;
+            text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
+        }
+
+        #game-container {
+            position: relative;
+            width: 90vmin;
+            height: 90vmin;
+            max-width: 500px;
+            max-height: 500px;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: pointer;
+            display: block;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 20;
+            transition: opacity 0.3s ease;
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8rem;
+            font-weight: 900;
+            color: var(--active-color);
+            z-index: 15;
+            pointer-events: none;
+            display: none;
+            text-shadow: 0 0 30px var(--active-color);
+        }
+
+        button {
+            background: transparent;
+            border: 1px solid var(--active-color);
+            color: var(--active-color);
+            padding: 12px 35px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border-radius: 4px;
+        }
+
+        button:hover {
+            background: var(--active-color);
+            color: var(--bg-color);
+            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        #feedback-text {
+            position: absolute;
+            bottom: -60px;
+            width: 100%;
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            height: 2rem;
+            pointer-events: none;
+        }
+
+        .shake {
+            animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="ui-layer">
+        <h1>SPEED GRID</h1>
+        <div id="score-display">0</div>
+        <div id="stats">
+            <div class="stat-item">BEST: <span id="best-time">--</span>ms</div>
+            <div class="stat-item">AVG: <span id="avg-time">--</span>ms</div>
+            <div class="stat-item">COMBO: <span id="combo-count">0</span></div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="countdown"></div>
+        <div id="overlay">
+            <button id="startBtn">START MISSION</button>
+        </div>
+        <div id="feedback-text"></div>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playTone(freq, type, duration, volume = 0.1) {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(volume, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        const sounds = {
+            tick: () => playTone(440, 'sine', 0.1),
+            hit: (ms) => {
+                const pitch = Math.max(400, 1000 - ms);
+                playTone(pitch, 'sine', 0.2, 0.15);
+                playTone(pitch * 1.5, 'triangle', 0.1, 0.05);
+            },
+            miss: () => {
+                playTone(150, 'sawtooth', 0.3, 0.2);
+                playTone(100, 'square', 0.2, 0.1);
+            },
+            countdown: (f) => playTone(f, 'sine', 0.1, 0.1)
+        };
+
+        // --- GAME LOGIC ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const overlay = document.getElementById('overlay');
+        const countdownEl = document.getElementById('countdown');
+        const scoreDisplay = document.getElementById('score-display');
+        const bestTimeEl = document.getElementById('best-time');
+        const avgTimeEl = document.getElementById('avg-time');
+        const comboCountEl = document.getElementById('combo-count');
+        const feedbackText = document.getElementById('feedback-text');
+
+        const GRID_SIZE = 4;
+        let canvasSize = 500;
+        let cellSize = canvasSize / GRID_SIZE;
+
+        let activeIndex = -1;
+        let startTime = 0;
+        let isWaiting = false;
+        let gameActive = false;
+
+        // Stats & Difficulty
+        let score = 0;
+        let bestTime = Infinity;
+        let totalTime = 0;
+        let hitCount = 0;
+        let combo = 0;
+        let minDelay = 1000;
+        let maxDelay = 2500;
+
+        function initCanvas() {
+            const dpr = window.devicePixelRatio || 1;
+            const size = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.7, 500);
+            canvasSize = size;
+            canvas.width = size * dpr;
+            canvas.height = size * dpr;
+            ctx.scale(dpr, dpr);
+            cellSize = size / GRID_SIZE;
+            drawGrid();
+        }
+
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+            for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+                const x = (i % GRID_SIZE) * cellSize;
+                const y = Math.floor(i / GRID_SIZE) * cellSize;
+                const innerGap = 8;
+
+                // Draw Base Grid
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x + innerGap, y + innerGap, cellSize - innerGap * 2, cellSize - innerGap * 2);
+
+                if (i === activeIndex) {
+                    // Active Block
+                    const grad = ctx.createRadialGradient(
+                        x + cellSize / 2, y + cellSize / 2, 5,
+                        x + cellSize / 2, y + cellSize / 2, cellSize / 2
+                    );
+                    grad.addColorStop(0, '#00f2ff');
+                    grad.addColorStop(1, '#0066ff');
+
+                    ctx.fillStyle = grad;
+                    ctx.shadowBlur = 20;
+                    ctx.shadowColor = '#00f2ff';
+                    ctx.fillRect(x + innerGap + 2, y + innerGap + 2, cellSize - innerGap * 2 - 4, cellSize - innerGap * 2 - 4);
+                    ctx.shadowBlur = 0;
+                }
+            }
+        }
+
+        function triggerBlock() {
+            if (!gameActive) return;
+            isWaiting = true;
+            activeIndex = -1;
+            drawGrid();
+
+            // Difficulty adjustment
+            const delay = Math.random() * (maxDelay - minDelay) + minDelay;
+
+            setTimeout(() => {
+                if (!gameActive) return;
+                activeIndex = Math.floor(Math.random() * (GRID_SIZE * GRID_SIZE));
+                startTime = performance.now();
+                isWaiting = false;
+                sounds.tick();
+                drawGrid();
+            }, delay);
+        }
+
+        function handleInput(e) {
+            if (!gameActive || isWaiting) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+
+            const col = Math.floor(x / (rect.width / GRID_SIZE));
+            const row = Math.floor(y / (rect.height / GRID_SIZE));
+            const clickedIndex = row * GRID_SIZE + col;
+
+            if (clickedIndex === activeIndex && activeIndex !== -1) {
+                // SUCCESS
+                const reactionTime = Math.round(performance.now() - startTime);
+
+                // Audio & Visual
+                sounds.hit(reactionTime);
+                showFeedback(`${reactionTime}ms`, '#00f2ff');
+
+                // Stats
+                hitCount++;
+                combo++;
+                totalTime += reactionTime;
+                if (reactionTime < bestTime) bestTime = reactionTime;
+
+                // Scoring (Base 500, bonus for speed)
+                const point = Math.max(10, Math.floor(1000 - reactionTime));
+                score += point * combo;
+
+                // Difficulty ramp
+                minDelay = Math.max(300, 1000 - hitCount * 20);
+                maxDelay = Math.max(800, 2500 - hitCount * 40);
+
+                updateUI();
+                activeIndex = -1;
+                drawGrid();
+                triggerBlock();
+            } else {
+                // MISS
+                handleMiss();
+            }
+        }
+
+        function handleMiss() {
+            if (isWaiting) return; // Prevent double punishment
+            sounds.miss();
+            combo = 0;
+            score = Math.max(0, score - 500);
+            document.body.classList.add('error-flash');
+            document.getElementById('game-container').classList.add('shake');
+            showFeedback('MISS!', '#ff3b3b');
+
+            setTimeout(() => {
+                document.body.classList.remove('error-flash');
+                document.getElementById('game-container').classList.remove('shake');
+            }, 200);
+
+            updateUI();
+        }
+
+        function showFeedback(text, color) {
+            feedbackText.textContent = text;
+            feedbackText.style.color = color;
+            feedbackText.style.opacity = 1;
+            setTimeout(() => { feedbackText.style.opacity = 0; }, 600);
+        }
+
+        function updateUI() {
+            scoreDisplay.textContent = score;
+            clickCountEl = comboCountEl; // Reuse
+            comboCountEl.textContent = combo;
+            bestTimeEl.textContent = bestTime === Infinity ? '--' : bestTime;
+            avgTimeEl.textContent = hitCount === 0 ? '--' : Math.round(totalTime / hitCount);
+        }
+
+        async function startSequence() {
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.style.display = 'none', 300);
+
+            countdownEl.style.display = 'block';
+            for (let i = 3; i > 0; i--) {
+                countdownEl.textContent = i;
+                sounds.countdown(440 + (3 - i) * 220);
+                await new Promise(r => setTimeout(r, 800));
+            }
+            countdownEl.textContent = "GO!";
+            sounds.countdown(1320);
+            await new Promise(r => setTimeout(r, 400));
+            countdownEl.style.display = 'none';
+
+            gameActive = true;
+            score = 0;
+            hitCount = 0;
+            totalTime = 0;
+            combo = 0;
+            bestTime = Infinity;
+            minDelay = 1000;
+            maxDelay = 2500;
+            updateUI();
+            triggerBlock();
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            startSequence();
+        });
+
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleInput(e);
+        });
+
+        window.addEventListener('resize', initCanvas);
+        initCanvas();
+
+    </script>
+</body>
+
+</html>

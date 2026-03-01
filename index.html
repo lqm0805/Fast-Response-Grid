@@ -364,7 +364,16 @@
 
                 // Audio & Visual
                 sounds.hit(reactionTime);
-                showFeedback(`${reactionTime}ms`, '#00f2ff');
+
+                let feedbackColor = '#00f2ff'; // Default Cyan
+                if (reactionTime < 300) {
+                    feedbackColor = '#00ffaa'; // Perfect - Greenish Cyan
+                } else if (reactionTime < 500) {
+                    feedbackColor = '#ffd700'; // Good - Gold
+                } else {
+                    feedbackColor = '#ff8800'; // Slow - Orange
+                }
+                showFeedback(`${reactionTime}ms`, feedbackColor);
 
                 // Stats
                 hitCount++;

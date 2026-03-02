@@ -217,6 +217,37 @@
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
         }
 
+        .sel-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 280px;
+            margin-top: 10px;
+        }
+
+        .sel-btn {
+            padding: 10px;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+        }
+
+        .back-btn {
+            margin-top: 20px;
+            font-size: 0.7rem !important;
+            opacity: 0.7;
+            border: none !important;
+            text-decoration: underline;
+            background: none !important;
+            color: var(--text-color);
+            cursor: pointer;
+        }
+
+        #sel-menu {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+
         #countdown {
             position: absolute;
             top: 50%;
@@ -371,6 +402,18 @@
                 <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">SURVIVAL</button>
                 <button class="primary" id="btn-entertainment"
                     onclick="startGame('ENTERTAINMENT')">ENTERTAINMENT</button>
+                <button id="btn-selection-open" onclick="showSelMenu()">SELECTION MODE</button>
+            </div>
+            <div id="sel-menu">
+                <div class="sel-grid">
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE VISION</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'ORBIT')" style="grid-column: span 2">ORBIT
+                        RING</button>
+                </div>
+                <button class="back-btn" onclick="hideSelMenu()">BACK</button>
             </div>
             <div class="stats-footer" id="global-stats">
                 <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
@@ -409,7 +452,8 @@
             orbitSpeed: 0.05,
             orbitTargetAngle: 0,
             orbitActive: false,
-            tinyShape: 'square'
+            tinyShape: 'square',
+            fixedChaos: null
         };
 
         const I18N = {
@@ -429,7 +473,13 @@
                 event_speed: 'HYPER SPEED!!',
                 event_tiny: 'TINY SHAPES!!',
                 event_spin: 'GRID SPIN!!',
-                event_orbit: 'ORBIT RING!!'
+                event_orbit: 'ORBIT RING!!',
+                selection: 'SELECTION MODE',
+                sel_double: 'DOUBLE VISION',
+                sel_speed: 'HYPER SPEED',
+                sel_tiny: 'TINY SHAPES',
+                sel_spin: 'GRID SPIN',
+                sel_orbit: 'ORBIT RING'
             },
             CN: {
                 title: '极速反应',
@@ -447,7 +497,13 @@
                 event_speed: '极限爆发!!',
                 event_tiny: '奇幻形状!!',
                 event_spin: '空间扭曲!!',
-                event_orbit: '轨道圆环!!'
+                event_orbit: '轨道圆环!!',
+                selection: '自选模式',
+                sel_double: '双重幻影',
+                sel_speed: '极限爆发',
+                sel_tiny: '奇幻形状',
+                sel_spin: '空间扭曲',
+                sel_orbit: '轨道圆环'
             }
         };
 
@@ -523,10 +579,13 @@
             draw();
         }
 
-        function drawSprites(i, x, y, size, gap) {
+        function drawSprites(i, x, y, size, gap, isActive) {
             const themeColor = THEMES[gameState.stage].color;
-            ctx.fillStyle = themeColor;
-            ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
+            ctx.fillStyle = isActive ? themeColor : '#222';
+
+            if (isActive) {
+                ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
+            }
 
             let drawSize = size - gap * 2 - 4;
             let centerX = x + size / 2;
@@ -602,7 +661,9 @@
                 ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
 
                 if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
-                    drawSprites(i, x, y, cellSize, gap);
+                    drawSprites(i, x, y, cellSize, gap, true);
+                } else if (gameState.chaosEvent === 'TINY') {
+                    drawSprites(i, x, y, cellSize, gap, false);
                 }
             }
 
@@ -813,12 +874,13 @@
             if (gameState.active) {
                 const t = I18N[gameState.lang];
                 let label = gameState.mode === 'ADVENTURE' ? t.adventure :
-                    gameState.mode === 'SURVIVAL' ? t.survival : t.entertainment;
+                    gameState.mode === 'SURVIVAL' ? t.survival :
+                        gameState.mode === 'SELECTION' ? t.selection : t.entertainment;
                 document.getElementById('mode-label').textContent = label;
             }
 
-            if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT') {
-                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : 180;
+            if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT' || gameState.mode === 'SELECTION') {
+                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : (gameState.mode === 'SELECTION' ? 30 : 180);
                 const fill = Math.max(0, (gameState.time / maxTime) * 100);
                 document.getElementById('status-fill').style.width = fill + '%';
             }
@@ -833,7 +895,7 @@
         }
 
         // --- FLOW ---
-        async function startGame(mode) {
+        async function startGame(mode, fixedType = null) {
             document.getElementById('overlay').style.opacity = 0;
             setTimeout(() => document.getElementById('overlay').style.display = 'none', 400);
 
@@ -855,10 +917,10 @@
                 mode: mode,
                 score: 0,
                 combo: 0,
-                stage: 1,
-                gridSize: mode === 'ENTERTAINMENT' ? 5 : 4,
+                stage: mode === 'SELECTION' ? 2 : 1,
+                gridSize: (mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 5 : 4,
                 lives: 3,
-                time: mode === 'ENTERTAINMENT' ? 180 : 60,
+                time: mode === 'ENTERTAINMENT' ? 180 : (mode === 'SELECTION' ? 30 : 60),
                 activeIndex: -1,
                 startTime: 0,
                 isWaiting: false,
@@ -867,25 +929,33 @@
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
                 lang: gameState.lang,
-                chaosEvent: null,
-                chaosTarget2: -1
+                chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
+                chaosTarget2: -1,
+                fixedChaos: fixedType,
+                orbitActive: fixedType === 'ORBIT',
+                orbitAngle: 0,
+                orbitSpeed: 0.05
             };
+
+            if (fixedType === 'ORBIT') startOrbitEvent();
+            if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
 
             const t = I18N[gameState.lang];
             let label = mode === 'ADVENTURE' ? t.adventure :
-                mode === 'SURVIVAL' ? t.survival : t.entertainment;
+                mode === 'SURVIVAL' ? t.survival :
+                    mode === 'SELECTION' ? t.selection : t.entertainment;
             document.getElementById('mode-label').textContent = label;
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
-            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT') ? 'block' : 'none';
-            document.documentElement.style.setProperty('--stage-color', THEMES[mode === 'ENTERTAINMENT' ? 2 : 1].color);
+            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
+            document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
             updateLives();
             updateUI();
 
-            if (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT') startTimer();
+            if (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();
             if (mode === 'ENTERTAINMENT') startChaosManager();
 
             draw();
-            triggerBlock();
+            if (!gameState.orbitActive) triggerBlock();
         }
 
         function startTimer() {
@@ -928,6 +998,8 @@
 
         function gameOver() {
             gameState.active = false;
+            gameState.orbitActive = false;
+            document.body.style.transform = 'rotate(0deg)';
             saveStats();
             sounds.gameOver();
 
@@ -982,10 +1054,25 @@
             document.getElementById('lang-toggle').textContent = lang;
 
             const t = I18N[lang];
-            document.querySelector('.menu-title').textContent = t.title;
+            const titleEl = document.querySelector('.menu-title');
+            if (titleEl) titleEl.textContent = t.title;
+
             document.getElementById('btn-adventure').textContent = t.adventure;
             document.getElementById('btn-survival').textContent = t.survival;
             document.getElementById('btn-entertainment').textContent = t.entertainment;
+            document.getElementById('btn-selection-open').textContent = t.selection;
+
+            const selBtns = document.querySelectorAll('.sel-btn');
+            if (selBtns.length >= 5) {
+                selBtns[0].textContent = t.sel_double;
+                selBtns[1].textContent = t.sel_speed;
+                selBtns[2].textContent = t.sel_tiny;
+                selBtns[3].textContent = t.sel_spin;
+                selBtns[4].textContent = t.sel_orbit;
+            }
+            const backBtn = document.querySelector('.back-btn');
+            if (backBtn) backBtn.textContent = lang === 'EN' ? 'BACK' : '返回';
+
             document.getElementById('label-clicks').textContent = t.clicks;
             document.getElementById('label-hi-score').textContent = t.hiscore;
 
@@ -997,6 +1084,16 @@
             if (!gameState.active) {
                 document.getElementById('mode-label').textContent = t.standby;
             }
+        }
+
+        function showSelMenu() {
+            document.querySelector('.btn-group').style.display = 'none';
+            document.getElementById('sel-menu').style.display = 'flex';
+        }
+
+        function hideSelMenu() {
+            document.querySelector('.btn-group').style.display = 'flex';
+            document.getElementById('sel-menu').style.display = 'none';
         }
 
         document.getElementById('lang-toggle').addEventListener('click', () => {

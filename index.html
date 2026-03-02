@@ -285,6 +285,26 @@
             line-height: 1.6;
         }
 
+        .icon-btn {
+            padding: 4px;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            border: 1px solid var(--btn-border);
+            background: var(--btn-bg);
+            color: var(--text-color);
+            transition: all 0.2s;
+        }
+
+        .icon-btn:hover {
+            border-color: var(--active-color);
+            transform: scale(1.1);
+        }
+
         .shake {
             animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
         }
@@ -322,8 +342,11 @@
             <div id="lives-container" style="display: none;">
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
             </div>
-            <button id="theme-toggle"
-                style="padding: 4px 8px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 1rem;">🌓</button>
+            <div style="display: flex; gap: 8px;">
+                <button id="audio-toggle" class="icon-btn">🔊</button>
+                <button id="lang-toggle" class="icon-btn">EN</button>
+                <button id="theme-toggle" class="icon-btn">🌙</button>
+            </div>
         </div>
         <div id="score-main">0</div>
         <div id="meta-stats">
@@ -342,14 +365,14 @@
         <div id="feedback"></div>
 
         <div id="overlay">
-            <div class="menu-title">GRID SPEED</div>
+            <div class="menu-title" id="menu-title">GRID SPEED</div>
             <div class="btn-group">
-                <button class="primary" onclick="startGame('ADVENTURE')">ADVENTURE (60s)</button>
-                <button class="primary" onclick="startGame('SURVIVAL')">SURVIVAL (3 LIVES)</button>
+                <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">ADVENTURE</button>
+                <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">SURVIVAL</button>
             </div>
             <div class="stats-footer" id="global-stats">
-                LIFETIME CLICKS: <span id="total-clicks">0</span><br>
-                HI-SCORE: <span id="hi-score">0</span>
+                <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
+                <span id="label-hi-score">HI-SCORE</span>: <span id="hi-score">0</span>
             </div>
         </div>
     </div>
@@ -374,7 +397,36 @@
             isWaiting: false,
             bestReaction: Infinity,
             hitCount: 0,
-            totalHits: 0
+            totalHits: 0,
+            muted: false,
+            lang: 'EN'
+        };
+
+        const I18N = {
+            EN: {
+                title: 'GRID SPEED',
+                adventure: 'ADVENTURE',
+                survival: 'SURVIVAL',
+                best: 'BEST',
+                combo: 'COMBO',
+                clicks: 'LIFETIME CLICKS',
+                hiscore: 'HI-SCORE',
+                gameover: 'GAME OVER',
+                standby: 'STANDBY',
+                result: 'RESULT'
+            },
+            CN: {
+                title: '极速反应',
+                adventure: '冒险模式',
+                survival: '生存模式',
+                best: '最高纪录',
+                combo: '连击',
+                clicks: '总点击量',
+                hiscore: '最高分',
+                gameover: '游戏结束',
+                standby: '准备开始',
+                result: '本次得分'
+            }
         };
 
         const THEMES = {
@@ -386,6 +438,7 @@
 
         // --- AUDIO ---
         function playTone(freq, type, duration, volume = 0.1) {
+            if (gameState.muted) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -407,7 +460,12 @@
                 if (ms < 200) playTone(p * 1.5, 'triangle', 0.3, 0.1);
             },
             miss: () => { playTone(150, 'sawtooth', 0.3, 0.2); playTone(100, 'square', 0.2, 0.1); },
-            count: (f) => playTone(f, 'sine', 0.1, 0.1)
+            count: (f) => playTone(f, 'sine', 0.1, 0.1),
+            gameOver: () => {
+                playTone(523.25, 'sine', 0.1, 0.1); // C5
+                setTimeout(() => playTone(659.25, 'sine', 0.1, 0.1), 100); // E5
+                setTimeout(() => playTone(783.99, 'sine', 0.3, 0.1), 200); // G5
+            }
         };
 
         // --- PARTICLES ---
@@ -591,6 +649,11 @@
             document.getElementById('combo-val').textContent = gameState.combo;
             document.getElementById('best-val').textContent = gameState.bestReaction === Infinity ? '--' : gameState.bestReaction;
 
+            if (gameState.active) {
+                const t = I18N[gameState.lang];
+                document.getElementById('mode-label').textContent = gameState.mode === 'ADVENTURE' ? t.adventure : t.survival;
+            }
+
             if (gameState.mode === 'ADVENTURE') {
                 const fill = Math.max(0, (gameState.time / 60) * 100);
                 document.getElementById('status-fill').style.width = fill + '%';
@@ -637,10 +700,13 @@
                 isWaiting: false,
                 bestReaction: Infinity,
                 hitCount: 0,
-                totalHits: gameState.totalHits || 0
+                totalHits: gameState.totalHits || 0,
+                muted: gameState.muted,
+                lang: gameState.lang
             };
 
-            document.getElementById('mode-label').textContent = mode;
+            const t = I18N[gameState.lang];
+            document.getElementById('mode-label').textContent = mode === 'ADVENTURE' ? t.adventure : t.survival;
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
             document.getElementById('status-bar').style.display = mode === 'ADVENTURE' ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[1].color);
@@ -668,13 +734,15 @@
         function gameOver() {
             gameState.active = false;
             saveStats();
+            sounds.gameOver();
 
             const overlay = document.getElementById('overlay');
             overlay.style.display = 'flex';
             setTimeout(() => overlay.style.opacity = 1, 10);
 
-            document.querySelector('.menu-title').textContent = "RESULT: " + gameState.score.toLocaleString();
-            document.getElementById('mode-label').textContent = "GAME OVER";
+            const t = I18N[gameState.lang];
+            document.querySelector('.menu-title').textContent = t.result + ": " + gameState.score.toLocaleString();
+            document.getElementById('mode-label').textContent = t.gameover;
             loadStats();
         }
 
@@ -690,6 +758,54 @@
             document.getElementById('hi-score').textContent = (localStorage.getItem('hi-score') || 0).toLocaleString();
             document.getElementById('total-clicks').textContent = (localStorage.getItem('total-clicks') || 0).toLocaleString();
         }
+
+        // --- AUDIO ---
+        function initAudio() {
+            const savedMuted = localStorage.getItem('muted') === 'true';
+            setMuted(savedMuted);
+        }
+
+        function setMuted(muted) {
+            gameState.muted = muted;
+            localStorage.setItem('muted', muted);
+            document.getElementById('audio-toggle').textContent = muted ? '🔇' : '🔊';
+        }
+
+        document.getElementById('audio-toggle').addEventListener('click', () => {
+            setMuted(!gameState.muted);
+        });
+
+        // --- LANGUAGE ---
+        function initLang() {
+            const savedLang = localStorage.getItem('lang') || 'EN';
+            setLang(savedLang);
+        }
+
+        function setLang(lang) {
+            gameState.lang = lang;
+            localStorage.setItem('lang', lang);
+            document.getElementById('lang-toggle').textContent = lang;
+
+            const t = I18N[lang];
+            document.querySelector('.menu-title').textContent = t.title;
+            document.getElementById('btn-adventure').textContent = t.adventure;
+            document.getElementById('btn-survival').textContent = t.survival;
+            document.getElementById('label-clicks').textContent = t.clicks;
+            document.getElementById('label-hi-score').textContent = t.hiscore;
+
+            // Stats labels
+            const metaStats = document.getElementById('meta-stats').children;
+            metaStats[0].innerHTML = `${t.best}: <span id="best-val">${gameState.bestReaction === Infinity ? '--' : gameState.bestReaction}</span>ms`;
+            metaStats[1].innerHTML = `${t.combo}: <span id="combo-val">${gameState.combo}</span>`;
+
+            if (!gameState.active) {
+                document.getElementById('mode-label').textContent = t.standby;
+            }
+        }
+
+        document.getElementById('lang-toggle').addEventListener('click', () => {
+            setLang(gameState.lang === 'EN' ? 'CN' : 'EN');
+        });
 
         // --- THEME ---
         function initTheme() {
@@ -714,6 +830,8 @@
         window.addEventListener('resize', initCanvas);
 
         loadStats();
+        initAudio();
+        initLang();
         initTheme();
         initCanvas();
     </script>

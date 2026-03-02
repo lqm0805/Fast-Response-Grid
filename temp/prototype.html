@@ -709,6 +709,10 @@
             setTheme(currentTheme === 'light' ? 'dark' : 'light');
         });
 
+        canvas.addEventListener('mousedown', handleInput);
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); });
+        window.addEventListener('resize', initCanvas);
+
         loadStats();
         initTheme();
         initCanvas();

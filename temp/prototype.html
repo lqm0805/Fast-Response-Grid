@@ -52,7 +52,7 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
-            transition: background-color 0.15s ease;
+            transition: background-color 0.15s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         body.error-flash {
@@ -369,6 +369,8 @@
             <div class="btn-group">
                 <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">ADVENTURE</button>
                 <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">SURVIVAL</button>
+                <button class="primary" id="btn-entertainment"
+                    onclick="startGame('ENTERTAINMENT')">ENTERTAINMENT</button>
             </div>
             <div class="stats-footer" id="global-stats">
                 <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
@@ -399,7 +401,9 @@
             hitCount: 0,
             totalHits: 0,
             muted: false,
-            lang: 'EN'
+            lang: 'EN',
+            chaosEvent: null,
+            chaosTarget2: -1
         };
 
         const I18N = {
@@ -407,25 +411,35 @@
                 title: 'GRID SPEED',
                 adventure: 'ADVENTURE',
                 survival: 'SURVIVAL',
+                entertainment: 'ENTERTAINMENT',
                 best: 'BEST',
                 combo: 'COMBO',
                 clicks: 'LIFETIME CLICKS',
                 hiscore: 'HI-SCORE',
                 gameover: 'GAME OVER',
                 standby: 'STANDBY',
-                result: 'RESULT'
+                result: 'RESULT',
+                event_double: 'DOUBLE VISION!!',
+                event_speed: 'HYPER SPEED!!',
+                event_tiny: 'TINY BLOCKS!!',
+                event_spin: 'GRID SPIN!!'
             },
             CN: {
                 title: '极速反应',
                 adventure: '冒险模式',
                 survival: '生存模式',
+                entertainment: '娱乐模式',
                 best: '最高纪录',
                 combo: '连击',
                 clicks: '总点击量',
                 hiscore: '最高分',
                 gameover: '游戏结束',
                 standby: '准备开始',
-                result: '本次得分'
+                result: '本次得分',
+                event_double: '双重幻影!!',
+                event_speed: '极限爆发!!',
+                event_tiny: '极小方块!!',
+                event_spin: '空间扭曲!!'
             }
         };
 
@@ -517,11 +531,17 @@
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
 
-                if (i === gameState.activeIndex) {
+                if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
                     const themeColor = THEMES[gameState.stage].color;
                     ctx.fillStyle = themeColor;
+
+                    let drawGap = gap;
+                    if (gameState.chaosEvent === 'TINY') {
+                        drawGap = cellSize * 0.35;
+                    }
+
                     ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
-                    ctx.fillRect(x + gap + 2, y + gap + 2, cellSize - gap * 2 - 4, cellSize - gap * 2 - 4);
+                    ctx.fillRect(x + drawGap + 2, y + drawGap + 2, cellSize - drawGap * 2 - 4, cellSize - drawGap * 2 - 4);
                     ctx.shadowBlur = 0;
                 }
             }
@@ -533,19 +553,30 @@
             if (gameState.active) requestAnimationFrame(draw);
         }
 
-        // --- LOGIC ---
         function triggerBlock() {
             if (!gameState.active) return;
             gameState.isWaiting = true;
             gameState.activeIndex = -1;
+            gameState.chaosTarget2 = -1;
 
-            const minD = Math.max(200, 1000 - gameState.hitCount * 15);
-            const maxD = Math.max(500, 2000 - gameState.hitCount * 30);
+            let baseDelay = 1000 - (gameState.hitCount * 15);
+            if (gameState.chaosEvent === 'SPEED') baseDelay /= 3;
+
+            const minD = Math.max(gameState.chaosEvent === 'SPEED' ? 100 : 200, baseDelay);
+            const maxD = Math.max(gameState.chaosEvent === 'SPEED' ? 300 : 500, baseDelay * 2);
             const delay = Math.random() * (maxD - minD) + minD;
 
             setTimeout(() => {
                 if (!gameState.active) return;
                 gameState.activeIndex = Math.floor(Math.random() * (gameState.gridSize * gameState.gridSize));
+
+                if (gameState.chaosEvent === 'DOUBLE') {
+                    let second;
+                    do { second = Math.floor(Math.random() * (gameState.gridSize * gameState.gridSize)); }
+                    while (second === gameState.activeIndex);
+                    gameState.chaosTarget2 = second;
+                }
+
                 gameState.startTime = performance.now();
                 gameState.isWaiting = false;
                 sounds.tick();
@@ -568,6 +599,11 @@
 
             if (idx === gameState.activeIndex && gameState.activeIndex !== -1) {
                 const rt = Math.round(performance.now() - gameState.startTime);
+                gameState.activeIndex = -1; // Clear to prevent double click
+                handleSuccess(rt, x, y);
+            } else if (idx === gameState.chaosTarget2 && gameState.chaosTarget2 !== -1) {
+                const rt = Math.round(performance.now() - gameState.startTime);
+                gameState.chaosTarget2 = -1;
                 handleSuccess(rt, x, y);
             } else {
                 handleError();
@@ -603,7 +639,11 @@
             }
 
             updateUI();
-            triggerBlock();
+
+            // If it was a double target and one is still active, don't trigger new block yet
+            if (gameState.activeIndex === -1 && gameState.chaosTarget2 === -1) {
+                triggerBlock();
+            }
         }
 
         function handleError() {
@@ -615,6 +655,9 @@
                 gameState.lives--;
                 updateLives();
                 if (gameState.lives <= 0) gameOver();
+            } else if (gameState.mode === 'ENTERTAINMENT') {
+                gameState.time = Math.max(0, gameState.time - 5);
+                showBadge('-5s');
             } else {
                 gameState.score = Math.max(0, gameState.score - 1000);
             }
@@ -651,11 +694,14 @@
 
             if (gameState.active) {
                 const t = I18N[gameState.lang];
-                document.getElementById('mode-label').textContent = gameState.mode === 'ADVENTURE' ? t.adventure : t.survival;
+                let label = gameState.mode === 'ADVENTURE' ? t.adventure :
+                    gameState.mode === 'SURVIVAL' ? t.survival : t.entertainment;
+                document.getElementById('mode-label').textContent = label;
             }
 
-            if (gameState.mode === 'ADVENTURE') {
-                const fill = Math.max(0, (gameState.time / 60) * 100);
+            if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT') {
+                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : 180;
+                const fill = Math.max(0, (gameState.time / maxTime) * 100);
                 document.getElementById('status-fill').style.width = fill + '%';
             }
         }
@@ -692,9 +738,9 @@
                 score: 0,
                 combo: 0,
                 stage: 1,
-                gridSize: 4,
+                gridSize: mode === 'ENTERTAINMENT' ? 5 : 4,
                 lives: 3,
-                time: 60,
+                time: mode === 'ENTERTAINMENT' ? 180 : 60,
                 activeIndex: -1,
                 startTime: 0,
                 isWaiting: false,
@@ -702,18 +748,23 @@
                 hitCount: 0,
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
-                lang: gameState.lang
+                lang: gameState.lang,
+                chaosEvent: null,
+                chaosTarget2: -1
             };
 
             const t = I18N[gameState.lang];
-            document.getElementById('mode-label').textContent = mode === 'ADVENTURE' ? t.adventure : t.survival;
+            let label = mode === 'ADVENTURE' ? t.adventure :
+                mode === 'SURVIVAL' ? t.survival : t.entertainment;
+            document.getElementById('mode-label').textContent = label;
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
-            document.getElementById('status-bar').style.display = mode === 'ADVENTURE' ? 'block' : 'none';
-            document.documentElement.style.setProperty('--stage-color', THEMES[1].color);
+            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT') ? 'block' : 'none';
+            document.documentElement.style.setProperty('--stage-color', THEMES[mode === 'ENTERTAINMENT' ? 2 : 1].color);
             updateLives();
             updateUI();
 
-            if (mode === 'ADVENTURE') startTimer();
+            if (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT') startTimer();
+            if (mode === 'ENTERTAINMENT') startChaosManager();
 
             draw();
             triggerBlock();
@@ -729,6 +780,32 @@
                     gameOver();
                 }
             }, 1000);
+        }
+
+        function startChaosManager() {
+            const chaosLoop = setInterval(() => {
+                if (!gameState.active || gameState.mode !== 'ENTERTAINMENT') { clearInterval(chaosLoop); return; }
+
+                const events = ['DOUBLE', 'SPEED', 'TINY', 'SPIN'];
+                const ev = events[Math.floor(Math.random() * events.length)];
+                gameState.chaosEvent = ev;
+
+                const t = I18N[gameState.lang];
+                const badgeTxt = ev === 'DOUBLE' ? t.event_double :
+                    ev === 'SPEED' ? t.event_speed :
+                        ev === 'TINY' ? t.event_tiny : t.event_spin;
+                showBadge(badgeTxt);
+
+                if (ev === 'SPIN') {
+                    document.body.style.transform = `rotate(${Math.random() > 0.5 ? 5 : -5}deg)`;
+                }
+
+                setTimeout(() => {
+                    gameState.chaosEvent = null;
+                    document.body.style.transform = 'rotate(0deg)';
+                }, 6000);
+
+            }, 12000);
         }
 
         function gameOver() {
@@ -790,6 +867,7 @@
             document.querySelector('.menu-title').textContent = t.title;
             document.getElementById('btn-adventure').textContent = t.adventure;
             document.getElementById('btn-survival').textContent = t.survival;
+            document.getElementById('btn-entertainment').textContent = t.entertainment;
             document.getElementById('label-clicks').textContent = t.clicks;
             document.getElementById('label-hi-score').textContent = t.hiscore;
 

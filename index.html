@@ -403,7 +403,13 @@
             muted: false,
             lang: 'EN',
             chaosEvent: null,
-            chaosTarget2: -1
+            chaosTarget2: -1,
+            expiryTimer: null,
+            orbitAngle: 0,
+            orbitSpeed: 0.05,
+            orbitTargetAngle: 0,
+            orbitActive: false,
+            tinyShape: 'square'
         };
 
         const I18N = {
@@ -421,8 +427,9 @@
                 result: 'RESULT',
                 event_double: 'DOUBLE VISION!!',
                 event_speed: 'HYPER SPEED!!',
-                event_tiny: 'TINY BLOCKS!!',
-                event_spin: 'GRID SPIN!!'
+                event_tiny: 'TINY SHAPES!!',
+                event_spin: 'GRID SPIN!!',
+                event_orbit: 'ORBIT RING!!'
             },
             CN: {
                 title: '极速反应',
@@ -438,8 +445,9 @@
                 result: '本次得分',
                 event_double: '双重幻影!!',
                 event_speed: '极限爆发!!',
-                event_tiny: '极小方块!!',
-                event_spin: '空间扭曲!!'
+                event_tiny: '奇幻形状!!',
+                event_spin: '空间扭曲!!',
+                event_orbit: '轨道圆环!!'
             }
         };
 
@@ -515,7 +523,69 @@
             draw();
         }
 
+        function drawSprites(i, x, y, size, gap) {
+            const themeColor = THEMES[gameState.stage].color;
+            ctx.fillStyle = themeColor;
+            ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
+
+            let drawSize = size - gap * 2 - 4;
+            let centerX = x + size / 2;
+            let centerY = y + size / 2;
+
+            if (gameState.chaosEvent === 'TINY') {
+                drawSize *= 0.35;
+                const shape = gameState.tinyShape || 'square';
+
+                if (shape === 'square') {
+                    ctx.fillRect(centerX - drawSize / 2, centerY - drawSize / 2, drawSize, drawSize);
+                } else if (shape === 'circle') {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, drawSize / 2, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (shape === 'heart') {
+                    drawHeart(centerX, centerY, drawSize);
+                } else if (shape === 'star') {
+                    drawStar(centerX, centerY, 5, drawSize / 2, drawSize / 4);
+                }
+            } else {
+                ctx.fillRect(x + gap + 2, y + gap + 2, drawSize, drawSize);
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function drawHeart(x, y, size) {
+            const w = size;
+            const h = size;
+            ctx.beginPath();
+            ctx.moveTo(x, y + h / 4);
+            ctx.bezierCurveTo(x, y, x - w / 2, y, x - w / 2, y + h / 4);
+            ctx.bezierCurveTo(x - w / 2, y + h / 2, x, y + h * 0.7, x, y + h * 0.85);
+            ctx.bezierCurveTo(x, y + h * 0.7, x + w / 2, y + h / 2, x + w / 2, y + h / 4);
+            ctx.bezierCurveTo(x + w / 2, y, x, y, x, y + h / 4);
+            ctx.fill();
+        }
+
+        function drawStar(x, y, spikes, outerRadius, innerRadius) {
+            let rot = Math.PI / 2 * 3;
+            let step = Math.PI / spikes;
+            ctx.beginPath();
+            ctx.moveTo(x, y - outerRadius);
+            for (let i = 0; i < spikes; i++) {
+                ctx.lineTo(x + Math.cos(rot) * outerRadius, y + Math.sin(rot) * outerRadius);
+                rot += step;
+                ctx.lineTo(x + Math.cos(rot) * innerRadius, y + Math.sin(rot) * innerRadius);
+                rot += step;
+            }
+            ctx.lineTo(x, y - outerRadius);
+            ctx.closePath();
+            ctx.fill();
+        }
+
         function draw() {
+            if (gameState.orbitActive) {
+                drawOrbit();
+                return;
+            }
             const size = canvas.width / (window.devicePixelRatio || 1);
             const cellSize = size / gameState.gridSize;
 
@@ -532,17 +602,7 @@
                 ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
 
                 if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
-                    const themeColor = THEMES[gameState.stage].color;
-                    ctx.fillStyle = themeColor;
-
-                    let drawGap = gap;
-                    if (gameState.chaosEvent === 'TINY') {
-                        drawGap = cellSize * 0.35;
-                    }
-
-                    ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
-                    ctx.fillRect(x + drawGap + 2, y + drawGap + 2, cellSize - drawGap * 2 - 4, cellSize - drawGap * 2 - 4);
-                    ctx.shadowBlur = 0;
+                    drawSprites(i, x, y, cellSize, gap);
                 }
             }
 
@@ -553,8 +613,36 @@
             if (gameState.active) requestAnimationFrame(draw);
         }
 
+        function drawOrbit() {
+            const size = canvas.width / (window.devicePixelRatio || 1);
+            ctx.clearRect(0, 0, size, size);
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const outerR = size * 0.4;
+            const innerR = size * 0.25;
+
+            // Track
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
+
+            // Target Sector
+            gameState.orbitAngle += gameState.orbitSpeed;
+            ctx.strokeStyle = THEMES[gameState.stage].color;
+            ctx.lineWidth = outerR - innerR;
+            ctx.beginPath();
+            ctx.arc(cx, cy, (outerR + innerR) / 2, gameState.orbitAngle, gameState.orbitAngle + 0.8);
+            ctx.stroke();
+
+            if (gameState.active) requestAnimationFrame(draw);
+        }
+
         function triggerBlock() {
-            if (!gameState.active) return;
+            if (!gameState.active || gameState.orbitActive) return;
+            if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
+
             gameState.isWaiting = true;
             gameState.activeIndex = -1;
             gameState.chaosTarget2 = -1;
@@ -567,7 +655,7 @@
             const delay = Math.random() * (maxD - minD) + minD;
 
             setTimeout(() => {
-                if (!gameState.active) return;
+                if (!gameState.active || gameState.orbitActive) return;
                 gameState.activeIndex = Math.floor(Math.random() * (gameState.gridSize * gameState.gridSize));
 
                 if (gameState.chaosEvent === 'DOUBLE') {
@@ -577,32 +665,62 @@
                     gameState.chaosTarget2 = second;
                 }
 
+                if (gameState.chaosEvent === 'TINY') {
+                    const shapes = ['square', 'circle', 'heart', 'star'];
+                    gameState.tinyShape = shapes[Math.floor(Math.random() * shapes.length)];
+                }
+
                 gameState.startTime = performance.now();
                 gameState.isWaiting = false;
                 sounds.tick();
+
+                // 5s Expiry (No penalty)
+                gameState.expiryTimer = setTimeout(() => {
+                    if (gameState.active && !gameState.isWaiting) {
+                        triggerBlock();
+                    }
+                }, 5000);
             }, delay);
         }
 
         function handleInput(e) {
-            if (!gameState.active || gameState.isWaiting) return;
+            if (!gameState.active || (gameState.isWaiting && !gameState.orbitActive)) return;
 
             const rect = canvas.getBoundingClientRect();
-            const cx = e.clientX || (e.touches && e.touches[0].clientX);
-            const cy = e.clientY || (e.touches && e.touches[0].clientY);
-            const x = (cx - rect.left) * (canvas.width / rect.width / (window.devicePixelRatio || 1));
-            const y = (cy - rect.top) * (canvas.height / rect.height / (window.devicePixelRatio || 1));
+            const cx_raw = e.clientX || (e.touches && e.touches[0].clientX);
+            const cy_raw = e.clientY || (e.touches && e.touches[0].clientY);
+            const x = (cx_raw - rect.left) * (canvas.width / rect.width / (window.devicePixelRatio || 1));
+            const y = (cy_raw - rect.top) * (canvas.height / rect.height / (window.devicePixelRatio || 1));
+
+            if (gameState.orbitActive) {
+                checkOrbitHit(x, y);
+                return;
+            }
 
             const cellSize = (canvas.width / (window.devicePixelRatio || 1)) / gameState.gridSize;
             const col = Math.floor(x / cellSize);
             const row = Math.floor(y / cellSize);
             const idx = row * gameState.gridSize + col;
 
+            // Precision Hitbox for TINY
+            if (gameState.chaosEvent === 'TINY' && (idx === gameState.activeIndex || idx === gameState.chaosTarget2)) {
+                const cellX = col * cellSize;
+                const cellY = row * cellSize;
+                const centerX = cellX + cellSize / 2;
+                const centerY = cellY + cellSize / 2;
+                const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
+                const drawSize = (cellSize - 6 * 2 - 4) * 0.35;
+                if (dist > drawSize / 2) { handleError(); return; }
+            }
+
             if (idx === gameState.activeIndex && gameState.activeIndex !== -1) {
                 const rt = Math.round(performance.now() - gameState.startTime);
+                if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
                 gameState.activeIndex = -1; // Clear to prevent double click
                 handleSuccess(rt, x, y);
             } else if (idx === gameState.chaosTarget2 && gameState.chaosTarget2 !== -1) {
                 const rt = Math.round(performance.now() - gameState.startTime);
+                if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
                 gameState.chaosTarget2 = -1;
                 handleSuccess(rt, x, y);
             } else {

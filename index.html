@@ -942,57 +942,61 @@
 
         function triggerBlock(immediate = false) {
             if (!gameState.active || gameState.orbitActive) return;
-
-            // Process pending chaos end
-            if (gameState.pendingChaosEnd) {
-                gameState.chaosEvent = null;
-                gameState.trapIndex = -1;
-                gameState.mirrorTarget = -1;
-                document.body.style.transform = 'rotate(0deg)';
-                gameState.pendingChaosEnd = false;
-            }
-
-            // Process pending chaos start
-            if (gameState.pendingChaosStart) {
-                const ev = gameState.pendingChaosStart;
-                gameState.pendingChaosStart = null;
-
-                if (ev === 'ORBIT') {
-                    gameState.chaosEvent = null;
-                    startOrbitEvent();
-                    showBadge(I18N[gameState.lang].event_orbit);
-                    return; // Skip normal block spawn
-                }
-
-                gameState.chaosEvent = ev;
-                const t = I18N[gameState.lang];
-                const badgeTxt = ev === 'DOUBLE' ? t.event_double :
-                    ev === 'SPEED' ? t.event_speed :
-                        ev === 'TINY' ? t.event_tiny :
-                            ev === 'MIRROR' ? t.event_mirror : t.event_spin;
-                showBadge(badgeTxt);
-
-                if (ev === 'SPIN') {
-                    document.body.style.transform = `rotate(${(Math.random() - 0.5) * 16}deg)`;
-                }
-            }
-
             if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
 
             gameState.isWaiting = true;
             gameState.activeIndex = -1;
             gameState.chaosTarget2 = -1;
 
-            let baseDelay = 1000 - (gameState.hitCount * 15);
-            if (gameState.chaosEvent === 'SPEED') baseDelay /= 3;
-            if (gameState.chaosEvent === 'MIRROR') baseDelay -= (gameState.mirrorConsecutive || 0) * 30; // speed up every consecutive hit
+            let nextChaosEvent = gameState.chaosEvent;
+            if (gameState.pendingChaosEnd) nextChaosEvent = null;
+            if (gameState.pendingChaosStart && gameState.pendingChaosStart !== 'ORBIT') nextChaosEvent = gameState.pendingChaosStart;
 
-            const minD = Math.max(gameState.chaosEvent === 'SPEED' ? 100 : 150, baseDelay);
-            const maxD = Math.max(gameState.chaosEvent === 'SPEED' ? 300 : 400, baseDelay * 2);
+            let baseDelay = 1000 - (gameState.hitCount * 15);
+            if (nextChaosEvent === 'SPEED') baseDelay /= 3;
+            if (nextChaosEvent === 'MIRROR') baseDelay -= (gameState.mirrorConsecutive || 0) * 30;
+
+            const minD = Math.max(nextChaosEvent === 'SPEED' ? 100 : 150, baseDelay);
+            const maxD = Math.max(nextChaosEvent === 'SPEED' ? 300 : 400, baseDelay * 2);
             const delay = immediate ? 10 : (Math.random() * (maxD - minD) + minD);
 
             setTimeout(() => {
                 if (!gameState.active || gameState.orbitActive) return;
+
+                // Process pending chaos end
+                if (gameState.pendingChaosEnd) {
+                    gameState.chaosEvent = null;
+                    gameState.trapIndex = -1;
+                    gameState.mirrorTarget = -1;
+                    document.body.style.transform = 'rotate(0deg)';
+                    gameState.pendingChaosEnd = false;
+                }
+
+                // Process pending chaos start
+                if (gameState.pendingChaosStart) {
+                    const ev = gameState.pendingChaosStart;
+                    gameState.pendingChaosStart = null;
+
+                    if (ev === 'ORBIT') {
+                        gameState.chaosEvent = null;
+                        startOrbitEvent();
+                        showBadge(I18N[gameState.lang].event_orbit);
+                        return; // Skip normal block spawn
+                    }
+
+                    gameState.chaosEvent = ev;
+                    const t = I18N[gameState.lang];
+                    const badgeTxt = ev === 'DOUBLE' ? t.event_double :
+                        ev === 'SPEED' ? t.event_speed :
+                            ev === 'TINY' ? t.event_tiny :
+                                ev === 'MIRROR' ? t.event_mirror : t.event_spin;
+                    showBadge(badgeTxt);
+
+                    if (ev === 'SPIN') {
+                        document.body.style.transform = `rotate(${(Math.random() - 0.5) * 16}deg)`;
+                    }
+                }
+
                 gameState.activeIndex = Math.floor(Math.random() * (gameState.gridSize * gameState.gridSize));
 
                 if (gameState.chaosEvent === 'DOUBLE') {

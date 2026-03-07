@@ -248,6 +248,22 @@
             align-items: center;
         }
 
+        .style-toggle-btn {
+            margin-top: 15px;
+            font-size: 0.8rem !important;
+            padding: 8px 16px;
+            background: var(--btn-bg);
+            border: 1px solid var(--btn-border);
+            color: var(--text-color);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .style-toggle-btn:hover {
+            border-color: var(--active-color);
+        }
+
         #countdown {
             position: absolute;
             top: 50%;
@@ -403,6 +419,7 @@
                 <button class="primary" id="btn-entertainment"
                     onclick="startGame('ENTERTAINMENT')">ENTERTAINMENT</button>
                 <button id="btn-selection-open" onclick="showSelMenu()">SELECTION MODE</button>
+                <button id="btn-style-toggle" class="style-toggle-btn" onclick="toggleStyle()">风格: 极简</button>
             </div>
             <div id="sel-menu">
                 <div class="sel-grid">
@@ -444,8 +461,9 @@
             bestReaction: Infinity,
             hitCount: 0,
             totalHits: 0,
-            muted: false,
-            lang: 'EN',
+            muted: localStorage.getItem('muted') === 'true',
+            lang: localStorage.getItem('lang') || 'EN',
+            visualTheme: localStorage.getItem('visualTheme') || 'MINIMAL',
             chaosEvent: null,
             chaosTarget2: -1,
             expiryTimer: null,
@@ -479,6 +497,7 @@
                 event_tiny: 'TINY SHAPES!!',
                 event_spin: 'GRID SPIN!!',
                 event_orbit: 'ORBIT RING!!',
+                event_mirror: 'MIRROR MODE!!',
                 selection: 'SELECTION MODE',
                 sel_double: 'DOUBLE VISION',
                 sel_speed: 'HYPER SPEED',
@@ -486,7 +505,9 @@
                 sel_spin: 'GRID SPIN',
                 sel_orbit: 'ORBIT RING',
                 sel_mirror: 'MIRROR',
-                event_mirror: 'MIRROR MODE!!'
+                style_toggle: 'STYLE: ',
+                style_min: 'MINIMAL',
+                style_gorg: 'GORGEOUS'
             },
             CN: {
                 title: '极速反应',
@@ -512,7 +533,10 @@
                 sel_spin: '空间扭曲',
                 sel_orbit: '轨道圆环',
                 sel_mirror: '奇妙模式',
-                event_mirror: '奇妙模式!!'
+                event_mirror: '奇妙模式!!',
+                style_toggle: '风格: ',
+                style_min: '极简',
+                style_gorg: '华丽'
             }
         };
 
@@ -565,12 +589,23 @@
                 this.life = 1.0;
             }
             draw() {
+                if (gameState.visualTheme === 'GORGEOUS') {
+                    ctx.globalCompositeOperation = 'lighter';
+                }
                 ctx.globalAlpha = this.life;
                 ctx.fillStyle = this.color;
+
+                if (gameState.visualTheme === 'GORGEOUS') {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = this.color;
+                }
+
                 ctx.beginPath();
-                ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+                ctx.arc(this.x, this.y, gameState.visualTheme === 'GORGEOUS' ? 3 : 2, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+                ctx.globalCompositeOperation = 'source-over';
             }
             update() {
                 this.x += this.vx; this.y += this.vy;
@@ -590,10 +625,24 @@
 
         function drawSprites(i, x, y, size, gap, isActive) {
             const themeColor = THEMES[gameState.stage].color;
-            ctx.fillStyle = isActive ? themeColor : '#222';
+            const isGorgeous = gameState.visualTheme === 'GORGEOUS';
 
             if (isActive) {
-                ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
+                if (isGorgeous) {
+                    const grad = ctx.createRadialGradient(x + size / 2, y + size / 2, 0, x + size / 2, y + size / 2, size / 2);
+                    grad.addColorStop(0, '#ffffff');
+                    grad.addColorStop(0.3, themeColor);
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
+                    ctx.shadowBlur = 30;
+                    ctx.shadowColor = themeColor;
+                } else {
+                    ctx.fillStyle = themeColor;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = themeColor;
+                }
+            } else {
+                ctx.fillStyle = isGorgeous ? 'rgba(34, 34, 34, 0.4)' : '#222';
             }
 
             let drawSize = size - gap * 2 - 4;
@@ -656,8 +705,17 @@
             }
             const size = canvas.width / (window.devicePixelRatio || 1);
             const cellSize = size / gameState.gridSize;
+            const isGorgeous = gameState.visualTheme === 'GORGEOUS';
 
             ctx.clearRect(0, 0, size, size);
+
+            if (isGorgeous) {
+                const bgGrad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.8);
+                bgGrad.addColorStop(0, 'rgba(0, 242, 255, 0.05)');
+                bgGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, size, size);
+            }
 
             // Grid
             for (let i = 0; i < gameState.gridSize * gameState.gridSize; i++) {
@@ -665,9 +723,18 @@
                 const y = Math.floor(i / gameState.gridSize) * cellSize;
                 const gap = 6;
 
-                ctx.strokeStyle = '#222';
-                ctx.lineWidth = 1;
+                if (isGorgeous) {
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = 'rgba(255,255,255,0.2)';
+                } else {
+                    ctx.strokeStyle = '#222';
+                    ctx.lineWidth = 1;
+                    ctx.shadowBlur = 0;
+                }
                 ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
+                ctx.shadowBlur = 0;
 
                 if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
                     drawSprites(i, x, y, cellSize, gap, true);
@@ -709,7 +776,16 @@
 
         function drawOrbit() {
             const size = canvas.width / (window.devicePixelRatio || 1);
+            const isGorgeous = gameState.visualTheme === 'GORGEOUS';
             ctx.clearRect(0, 0, size, size);
+
+            if (isGorgeous) {
+                const bgGrad = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size * 0.8);
+                bgGrad.addColorStop(0, 'rgba(255, 0, 234, 0.05)');
+                bgGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = bgGrad;
+                ctx.fillRect(0, 0, size, size);
+            }
 
             const cx = size / 2;
             const cy = size / 2;
@@ -717,18 +793,26 @@
             const innerR = size * 0.25;
 
             // Track
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = isGorgeous ? 'rgba(255,255,255,0.1)' : '#222';
+            ctx.lineWidth = isGorgeous ? 4 : 2;
+            if (isGorgeous) {
+                ctx.shadowBlur = 10; ctx.shadowColor = 'rgba(255,255,255,0.2)';
+            }
             ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
+            ctx.shadowBlur = 0;
 
             // Target Sector
             gameState.orbitAngle += gameState.orbitSpeed;
             ctx.strokeStyle = THEMES[gameState.stage].color;
             ctx.lineWidth = outerR - innerR;
+            if (isGorgeous) {
+                ctx.shadowBlur = 30; ctx.shadowColor = THEMES[gameState.stage].color;
+            }
             ctx.beginPath();
             ctx.arc(cx, cy, (outerR + innerR) / 2, gameState.orbitAngle, gameState.orbitAngle + 0.8);
             ctx.stroke();
+            ctx.shadowBlur = 0;
 
             if (gameState.active) requestAnimationFrame(draw);
         }
@@ -1149,6 +1233,7 @@
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
                 lang: gameState.lang,
+                visualTheme: gameState.visualTheme,
                 chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
@@ -1321,6 +1406,22 @@
 
             if (!gameState.active) {
                 document.getElementById('mode-label').textContent = t.standby;
+            }
+            updateStyleBtnLabel();
+        }
+
+        function toggleStyle() {
+            gameState.visualTheme = gameState.visualTheme === 'MINIMAL' ? 'GORGEOUS' : 'MINIMAL';
+            localStorage.setItem('visualTheme', gameState.visualTheme);
+            updateStyleBtnLabel();
+            if (!gameState.active) draw(); // Redraw menu background
+        }
+
+        function updateStyleBtnLabel() {
+            const t = I18N[gameState.lang];
+            const btn = document.getElementById('btn-style-toggle');
+            if (btn) {
+                btn.textContent = t.style_toggle + (gameState.visualTheme === 'MINIMAL' ? t.style_min : t.style_gorg);
             }
         }
 

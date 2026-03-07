@@ -310,15 +310,16 @@
         .sel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            width: 280px;
-            margin-top: 10px;
+            gap: 15px;
+            width: 340px;
+            margin-top: 15px;
         }
 
         .sel-btn {
-            padding: 10px;
-            font-size: 0.7rem;
+            padding: 16px 10px;
+            font-size: 0.85rem;
             letter-spacing: 1px;
+            text-align: center;
         }
 
         .back-btn {
@@ -341,13 +342,6 @@
         .btn-icon {
             font-size: 1.2rem;
             filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
-        }
-
-        .style-toggle-btn {
-            margin-top: 15px;
-            font-size: 0.8rem !important;
-            padding: 8px 16px;
-            border-radius: 20px !important;
         }
 
         #countdown {
@@ -471,12 +465,17 @@
 <body>
     <div id="hud">
         <div class="hud-top">
-            <div id="mode-label">STANDBY</div>
+            <div style="display: flex; align-items: center;">
+                <button id="btn-quit" class="icon-btn"
+                    style="display: none; font-size: 1.5rem; width: 44px; height: 44px; margin-right: 15px;"
+                    onclick="quitGame()">🔙</button>
+                <div id="mode-label" style="font-size: 1.2rem;">STANDBY</div>
+            </div>
             <div id="lives-container" style="display: none;">
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
             </div>
             <div style="display: flex; gap: 8px;">
-                <button id="btn-quit" class="icon-btn" style="display: none;" onclick="quitGame()">🔙</button>
+                <button id="btn-style-toggle" class="icon-btn" onclick="toggleStyle()">✨</button>
                 <button id="audio-toggle" class="icon-btn">🔊</button>
                 <button id="lang-toggle" class="icon-btn">EN</button>
                 <button id="theme-toggle" class="icon-btn">🌙</button>
@@ -513,19 +512,15 @@
                 <button id="btn-selection-open" onclick="showSelMenu()">
                     <span class="btn-icon">⚙️</span> <span id="txt-sel">SELECTION MODE</span>
                 </button>
-                <button id="btn-style-toggle" class="style-toggle-btn" onclick="toggleStyle()">
-                    <span class="btn-icon">✨</span> <span id="txt-style">STYLE: MINIMAL</span>
-                </button>
             </div>
             <div id="sel-menu">
                 <div class="sel-grid">
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE VISION</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'MIRROR')"
-                        style="grid-column: span 2">MIRROR</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE VISION</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
+                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'MIRROR')">MIRROR</button>
                 </div>
                 <button class="back-btn" onclick="hideSelMenu()">BACK</button>
             </div>
@@ -1330,7 +1325,7 @@
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
             document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
-            document.getElementById('btn-quit').style.display = 'block';
+            document.getElementById('btn-quit').style.display = 'flex';
             updateLives();
             updateUI();
 
@@ -1517,10 +1512,9 @@
         }
 
         function updateStyleBtnLabel() {
-            const t = I18N[gameState.lang];
-            const btnTxt = document.getElementById('txt-style');
-            if (btnTxt) {
-                btnTxt.textContent = t.style_toggle + (gameState.visualTheme === 'MINIMAL' ? t.style_min : t.style_premium);
+            const btn = document.getElementById('btn-style-toggle');
+            if (btn) {
+                btn.textContent = gameState.visualTheme === 'MINIMAL' ? '⬜' : '✨';
             }
         }
 

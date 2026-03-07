@@ -942,6 +942,41 @@
 
         function triggerBlock(immediate = false) {
             if (!gameState.active || gameState.orbitActive) return;
+
+            // Process pending chaos end
+            if (gameState.pendingChaosEnd) {
+                gameState.chaosEvent = null;
+                gameState.trapIndex = -1;
+                gameState.mirrorTarget = -1;
+                document.body.style.transform = 'rotate(0deg)';
+                gameState.pendingChaosEnd = false;
+            }
+
+            // Process pending chaos start
+            if (gameState.pendingChaosStart) {
+                const ev = gameState.pendingChaosStart;
+                gameState.pendingChaosStart = null;
+
+                if (ev === 'ORBIT') {
+                    gameState.chaosEvent = null;
+                    startOrbitEvent();
+                    showBadge(I18N[gameState.lang].event_orbit);
+                    return; // Skip normal block spawn
+                }
+
+                gameState.chaosEvent = ev;
+                const t = I18N[gameState.lang];
+                const badgeTxt = ev === 'DOUBLE' ? t.event_double :
+                    ev === 'SPEED' ? t.event_speed :
+                        ev === 'TINY' ? t.event_tiny :
+                            ev === 'MIRROR' ? t.event_mirror : t.event_spin;
+                showBadge(badgeTxt);
+
+                if (ev === 'SPIN') {
+                    document.body.style.transform = `rotate(${(Math.random() - 0.5) * 16}deg)`;
+                }
+            }
+
             if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
 
             gameState.isWaiting = true;
@@ -1271,6 +1306,8 @@
                 lang: gameState.lang,
                 visualTheme: gameState.visualTheme,
                 chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
+                pendingChaosStart: null,
+                pendingChaosEnd: false,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
                 orbitActive: fixedType === 'ORBIT',
@@ -1317,36 +1354,10 @@
                 if (!gameState.active || gameState.mode !== 'ENTERTAINMENT') { clearInterval(chaosLoop); return; }
 
                 const events = ['DOUBLE', 'SPEED', 'TINY', 'SPIN', 'ORBIT', 'MIRROR'];
-                const ev = events[Math.floor(Math.random() * events.length)];
-
-                if (ev === 'ORBIT') {
-                    gameState.chaosEvent = null;
-                    startOrbitEvent();
-                    const t = I18N[gameState.lang];
-                    showBadge(t.event_orbit);
-                    return;
-                }
-
-                gameState.chaosEvent = ev;
-
-                const t = I18N[gameState.lang];
-                const badgeTxt = ev === 'DOUBLE' ? t.event_double :
-                    ev === 'SPEED' ? t.event_speed :
-                        ev === 'TINY' ? t.event_tiny :
-                            ev === 'MIRROR' ? t.event_mirror : t.event_spin;
-                showBadge(badgeTxt);
-
-                if (ev === 'SPIN') {
-                    document.body.style.transform = `rotate(${(Math.random() - 0.5) * 16}deg)`;
-                }
+                gameState.pendingChaosStart = events[Math.floor(Math.random() * events.length)];
 
                 setTimeout(() => {
-                    if (gameState.chaosEvent === ev) {
-                        gameState.chaosEvent = null;
-                        gameState.trapIndex = -1;
-                        gameState.mirrorTarget = -1;
-                        document.body.style.transform = 'rotate(0deg)';
-                    }
+                    gameState.pendingChaosEnd = true;
                 }, 6000);
 
             }, 12000);

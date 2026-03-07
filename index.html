@@ -4,88 +4,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>极速反应网格 - 强化版</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <title>极速反应网格 - Shadcn 重构版</title>
     <style>
         :root {
-            --bg-color: #050505;
-            --grid-color: #1a1a1a;
-            --active-color: #00f2ff;
-            --text-color: #ffffff;
-            --accent-color: #ff00ea;
-            --error-color: #ff3b3b;
-            --score-color: #ffd700;
-            --stage-color: #00f2ff;
-            --overlay-bg: rgba(0, 0, 0, 0.9);
-            --btn-bg: rgba(255, 255, 255, 0.05);
-            --btn-border: rgba(255, 255, 255, 0.2);
-        }
-
-        [data-theme="light"] {
-            --bg-color: #f5f5f7;
-            --grid-color: #e5e5e7;
-            --active-color: #0071e3;
-            --text-color: #1d1d1f;
-            --accent-color: #ff3b30;
-            --error-color: #ff3b3b;
-            --score-color: #ff9500;
-            --stage-color: #0071e3;
-            --overlay-bg: rgba(255, 255, 255, 0.9);
-            --btn-bg: rgba(0, 0, 0, 0.05);
-            --btn-border: rgba(0, 0, 0, 0.2);
-        }
-
-        /* --- PREMIUM THEME (Phase 14) --- */
-        [data-theme="premium"] {
-            --bg-color: #0f172a;
-            /* Deep slate */
-            --grid-color: rgba(255, 255, 255, 0.05);
-            --text-color: #f8fafc;
-            /* Vibrant neon palette */
-            --active-color: #0ea5e9;
-            --accent-color: #ec4899;
+            --bg-color: #f8f9fa;
+            --grid-color: #e2e8f0;
+            --active-color: #0f172a;
+            --text-color: #0f172a;
+            --accent-color: #334155;
             --error-color: #ef4444;
-            --score-color: #fbbf24;
-            --stage-color: #0ea5e9;
-
-            /* Glassmorphism settings */
-            --overlay-bg: rgba(15, 23, 42, 0.6);
-            --btn-bg: rgba(255, 255, 255, 0.03);
-            --btn-border: rgba(255, 255, 255, 0.1);
-            --glass-blur: blur(16px);
-            --glow-spread: 0 0 20px rgba(14, 165, 233, 0.5);
-        }
-
-        body[data-theme="premium"] {
-            font-family: 'Outfit', sans-serif;
-        }
-
-        /* Animated dynamic background for premium mode */
-        body[data-theme="premium"]::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at center, rgba(14, 165, 233, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 30%);
-            background-size: 100% 100%;
-            animation: premiumBgDrift 20s linear infinite alternate;
-            z-index: -1;
-            pointer-events: none;
-        }
-
-        @keyframes premiumBgDrift {
-            0% {
-                transform: rotate(0deg) scale(1);
-            }
-
-            100% {
-                transform: rotate(360deg) scale(1.2);
-            }
+            --score-color: #0f172a;
+            --stage-color: #334155;
+            --overlay-bg: rgba(255, 255, 255, 0.7);
+            --btn-bg: #ffffff;
+            --btn-border: #e2e8f0;
+            --card-border: #e2e8f0;
+            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
         }
 
         * {
@@ -99,7 +33,7 @@
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -110,7 +44,7 @@
         }
 
         body.error-flash {
-            background-color: #300;
+            background-color: #fca5a5;
         }
 
         #hud {
@@ -146,7 +80,6 @@
             font-size: 2.5rem;
             font-weight: 900;
             color: var(--score-color);
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
         }
 
         #meta-stats {
@@ -160,7 +93,7 @@
         #status-bar {
             width: 100%;
             height: 4px;
-            background: #222;
+            background: #e2e8f0;
             margin: 10px 0;
             position: relative;
             overflow: hidden;
@@ -172,7 +105,6 @@
             width: 100%;
             background: var(--stage-color);
             transition: width 0.1s linear, background-color 0.5s;
-            box-shadow: 0 0 10px var(--stage-color);
         }
 
         #lives-container {
@@ -215,30 +147,31 @@
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 100;
             transition: opacity 0.4s;
         }
 
-        [data-theme="premium"] #overlay {
-            backdrop-filter: var(--glass-blur);
-            -webkit-backdrop-filter: var(--glass-blur);
-            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
+        .shadcn-card {
+            background-color: white;
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 400px;
+            width: 90%;
         }
 
         .menu-title {
-            font-size: 2.5rem;
+            font-size: 2rem;
             font-weight: 900;
-            margin-bottom: 40px;
-            letter-spacing: 10px;
-            background: linear-gradient(45deg, #00f2ff, #ff00ea);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
+            margin-bottom: 30px;
+            letter-spacing: 5px;
+            color: var(--text-color);
         }
 
         .btn-group {
@@ -252,73 +185,45 @@
             background: var(--btn-bg);
             border: 1px solid var(--btn-border);
             color: var(--text-color);
-            padding: 16px;
+            padding: 12px 16px;
             font-size: 0.9rem;
-            font-weight: bold;
-            letter-spacing: 2px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: all 0.2s ease-in-out;
             border-radius: 8px;
             position: relative;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-        }
-
-        [data-theme="premium"] button {
-            backdrop-filter: blur(4px);
-            border-radius: 12px;
-            text-transform: uppercase;
-            letter-spacing: 3px;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         }
 
         button:hover {
-            border-color: var(--active-color);
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        [data-theme="premium"] button:hover {
-            box-shadow: var(--glow-spread);
-            background: rgba(14, 165, 233, 0.15);
+            background: #f1f5f9;
         }
 
         button.primary {
-            border-color: var(--active-color);
-            color: var(--active-color);
-        }
-
-        [data-theme="premium"] button.primary {
-            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
+            background: var(--text-color);
+            border-color: var(--text-color);
+            color: white;
         }
 
         button.primary:hover {
-            background: var(--active-color);
-            color: #000;
-            box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
-        }
-
-        [data-theme="premium"] button.primary:hover {
-            background: linear-gradient(135deg, #0ea5e9, #ec4899);
-            color: #fff;
-            box-shadow: 0 0 25px rgba(236, 72, 153, 0.5);
-            border-color: transparent;
+            background: #1e293b;
         }
 
         .sel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 340px;
+            gap: 12px;
+            width: 100%;
             margin-top: 15px;
         }
 
         .sel-btn {
-            padding: 16px 10px;
+            padding: 12px 10px;
             font-size: 0.85rem;
-            letter-spacing: 1px;
             text-align: center;
         }
 
@@ -341,7 +246,7 @@
 
         .btn-icon {
             font-size: 1.2rem;
-            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+            filter: grayscale(100%);
         }
 
         #countdown {
@@ -475,10 +380,8 @@
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
             </div>
             <div style="display: flex; gap: 8px;">
-                <button id="btn-style-toggle" class="icon-btn" onclick="toggleStyle()">✨</button>
                 <button id="audio-toggle" class="icon-btn">🔊</button>
                 <button id="lang-toggle" class="icon-btn">EN</button>
-                <button id="theme-toggle" class="icon-btn">🌙</button>
             </div>
         </div>
         <div id="score-main">0</div>
@@ -498,35 +401,38 @@
         <div id="feedback"></div>
 
         <div id="overlay">
-            <div class="menu-title" id="menu-title">GRID SPEED</div>
-            <div class="btn-group">
-                <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">
-                    <span class="btn-icon">🌌</span> <span id="txt-adv">ADVENTURE</span>
-                </button>
-                <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">
-                    <span class="btn-icon">⚡</span> <span id="txt-surv">SURVIVAL</span>
-                </button>
-                <button class="primary" id="btn-entertainment" onclick="startGame('ENTERTAINMENT')">
-                    <span class="btn-icon">🎭</span> <span id="txt-ent">ENTERTAINMENT</span>
-                </button>
-                <button id="btn-selection-open" onclick="showSelMenu()">
-                    <span class="btn-icon">⚙️</span> <span id="txt-sel">SELECTION MODE</span>
-                </button>
-            </div>
-            <div id="sel-menu">
-                <div class="sel-grid">
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE VISION</button>
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
-                    <button class="sel-btn primary" onclick="startGame('SELECTION', 'MIRROR')">MIRROR</button>
+            <div class="shadcn-card">
+                <div class="menu-title" id="menu-title">GRID SPEED</div>
+                <div class="btn-group">
+                    <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">
+                        <span class="btn-icon">🌌</span> <span id="txt-adv">ADVENTURE</span>
+                    </button>
+                    <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">
+                        <span class="btn-icon">⚡</span> <span id="txt-surv">SURVIVAL</span>
+                    </button>
+                    <button class="primary" id="btn-entertainment" onclick="startGame('ENTERTAINMENT')">
+                        <span class="btn-icon">🎭</span> <span id="txt-ent">ENTERTAINMENT</span>
+                    </button>
+                    <button id="btn-selection-open" onclick="showSelMenu()">
+                        <span class="btn-icon">⚙️</span> <span id="txt-sel">SELECTION MODE</span>
+                    </button>
                 </div>
-                <button class="back-btn" onclick="hideSelMenu()">BACK</button>
-            </div>
-            <div class="stats-footer" id="global-stats">
-                <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
-                <span id="label-hi-score">HI-SCORE</span>: <span id="hi-score">0</span>
+                <div id="sel-menu">
+                    <div class="sel-grid">
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE
+                            VISION</button>
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
+                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'MIRROR')">MIRROR</button>
+                    </div>
+                    <button class="back-btn" onclick="hideSelMenu()">BACK</button>
+                </div>
+                <div class="stats-footer" id="global-stats">
+                    <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
+                    <span id="label-hi-score">HI-SCORE</span>: <span id="hi-score">0</span>
+                </div>
             </div>
         </div>
     </div>
@@ -554,7 +460,6 @@
             totalHits: 0,
             muted: localStorage.getItem('muted') === 'true',
             lang: localStorage.getItem('lang') || 'EN',
-            visualTheme: localStorage.getItem('visualTheme') || 'MINIMAL',
             chaosEvent: null,
             chaosTarget2: -1,
             expiryTimer: null,
@@ -1303,7 +1208,6 @@
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
                 lang: gameState.lang,
-                visualTheme: gameState.visualTheme,
                 chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
                 pendingChaosStart: null,
                 pendingChaosEnd: false,
@@ -1479,8 +1383,6 @@
             const limitH = document.getElementById('label-hi-score');
             if (limitH) limitH.textContent = gameState.lang === 'EN' ? 'HI-SCORE' : '最高分';
 
-            updateStyleBtnLabel();
-
             // Stats labels
             const metaStats = document.getElementById('meta-stats').children;
             if (metaStats.length >= 2) {
@@ -1494,30 +1396,6 @@
             }
         }
 
-        function toggleStyle() {
-            gameState.visualTheme = gameState.visualTheme === 'MINIMAL' ? 'PREMIUM' : 'MINIMAL';
-            localStorage.setItem('visualTheme', gameState.visualTheme);
-            applyTheme();
-        }
-
-        function applyTheme() {
-            if (gameState.visualTheme === 'PREMIUM') {
-                document.body.setAttribute('data-theme', 'premium');
-            } else {
-                // If there's a light theme, we could handle it here, but default is minimal UI
-                document.body.removeAttribute('data-theme');
-            }
-            updateStyleBtnLabel();
-            if (!gameState.active) draw(); // Redraw menu background
-        }
-
-        function updateStyleBtnLabel() {
-            const btn = document.getElementById('btn-style-toggle');
-            if (btn) {
-                btn.textContent = gameState.visualTheme === 'MINIMAL' ? '⬜' : '✨';
-            }
-        }
-
         function showSelMenu() {
             document.querySelector('.btn-group').style.display = 'none';
             document.getElementById('sel-menu').style.display = 'flex';
@@ -1526,29 +1404,6 @@
         function hideSelMenu() {
             document.getElementById('sel-menu').style.display = 'none';
             document.querySelector('.btn-group').style.display = 'flex';
-        }
-
-        // --- THEME (Light/Dark Original) ---
-        function initTheme() {
-            const toggleBtn = document.getElementById('theme-toggle');
-            if (toggleBtn) {
-                toggleBtn.addEventListener('click', () => {
-                    if (gameState.visualTheme === 'PREMIUM') {
-                        // Light mode isn't compatible with premium currently, fallback to toggle style
-                        toggleStyle();
-                        return;
-                    }
-                    const isLight = document.body.getAttribute('data-theme') === 'light';
-                    if (isLight) {
-                        document.body.removeAttribute('data-theme');
-                        toggleBtn.textContent = '🌙';
-                    } else {
-                        document.body.setAttribute('data-theme', 'light');
-                        toggleBtn.textContent = '☀️';
-                    }
-                });
-            }
-            applyTheme();
         }
 
         document.getElementById('lang-toggle').addEventListener('click', () => {
@@ -1563,7 +1418,6 @@
         loadStats();
         initAudio();
         initLang();
-        initTheme();
         initCanvas();
     </script>
 </body>

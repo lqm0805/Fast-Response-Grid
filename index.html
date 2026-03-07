@@ -688,7 +688,7 @@
 
             // Draw mirror axis line
             if (gameState.chaosEvent === 'MIRROR' && gameState.mirrorAxis && gameState.mirrorTarget !== -1) {
-                ctx.strokeStyle = gameState.mirrorAxisColor === 'red' ? '#ff3b3b' : '#00ff88';
+                ctx.strokeStyle = gameState.mirrorAxisColor === 'red' ? '#ff3b3b' : (gameState.mirrorAxisColor === 'yellow' ? '#ffd700' : '#00ff88');
                 ctx.lineWidth = 3; ctx.setLineDash([8, 6]);
                 if (gameState.mirrorAxis === 'vertical') {
                     ctx.beginPath(); ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size); ctx.stroke();
@@ -861,7 +861,8 @@
 
                     const axes = ['vertical', 'horizontal', 'diagonal'];
                     gameState.mirrorAxis = axes[Math.floor(Math.random() * axes.length)];
-                    gameState.mirrorAxisColor = Math.random() < 0.15 ? 'red' : 'green';
+                    const randC = Math.random();
+                    gameState.mirrorAxisColor = randC < 0.15 ? 'red' : (randC < 0.40 ? 'yellow' : 'green');
                     gameState.mirrorTarget = Math.floor(Math.random() * total);
 
                     if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
@@ -926,20 +927,28 @@
                         return;
                     }
 
-                    // Green Axis: Check symmetry
+                    // Green or Yellow Axis: Check expected click position
                     const g = gameState.gridSize;
                     const mRow = Math.floor(gameState.mirrorTarget / g);
                     const mCol = gameState.mirrorTarget % g;
                     let expectedRow, expectedCol;
-                    if (gameState.mirrorAxis === 'vertical') {
+
+                    if (gameState.mirrorAxisColor === 'yellow') {
+                        // Yellow: directly click the target itself
                         expectedRow = mRow;
-                        expectedCol = g - 1 - mCol;
-                    } else if (gameState.mirrorAxis === 'horizontal') {
-                        expectedRow = g - 1 - mRow;
                         expectedCol = mCol;
-                    } else { // diagonal
-                        expectedRow = mCol;
-                        expectedCol = mRow;
+                    } else {
+                        // Green: click symmetric position
+                        if (gameState.mirrorAxis === 'vertical') {
+                            expectedRow = mRow;
+                            expectedCol = g - 1 - mCol;
+                        } else if (gameState.mirrorAxis === 'horizontal') {
+                            expectedRow = g - 1 - mRow;
+                            expectedCol = mCol;
+                        } else { // diagonal
+                            expectedRow = mCol;
+                            expectedCol = mRow;
+                        }
                     }
                     const expectedIdx = expectedRow * g + expectedCol;
 

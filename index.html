@@ -410,8 +410,9 @@
                     <button class="sel-btn" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
                     <button class="sel-btn" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
                     <button class="sel-btn" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
-                    <button class="sel-btn" onclick="startGame('SELECTION', 'ORBIT')" style="grid-column: span 2">ORBIT
-                        RING</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
+                    <button class="sel-btn" onclick="startGame('SELECTION', 'MIRROR')"
+                        style="grid-column: span 2">MIRROR</button>
                 </div>
                 <button class="back-btn" onclick="hideSelMenu()">BACK</button>
             </div>
@@ -453,7 +454,11 @@
             orbitTargetAngle: 0,
             orbitActive: false,
             tinyShape: 'square',
-            fixedChaos: null
+            fixedChaos: null,
+            mirrorAxis: null,
+            mirrorTarget: -1,
+            trapIndex: -1,
+            trapTimer: null
         };
 
         const I18N = {
@@ -479,7 +484,9 @@
                 sel_speed: 'HYPER SPEED',
                 sel_tiny: 'TINY SHAPES',
                 sel_spin: 'GRID SPIN',
-                sel_orbit: 'ORBIT RING'
+                sel_orbit: 'ORBIT RING',
+                sel_mirror: 'MIRROR',
+                event_mirror: 'MIRROR MODE!!'
             },
             CN: {
                 title: '极速反应',
@@ -503,7 +510,9 @@
                 sel_speed: '极限爆发',
                 sel_tiny: '奇幻形状',
                 sel_spin: '空间扭曲',
-                sel_orbit: '轨道圆环'
+                sel_orbit: '轨道圆环',
+                sel_mirror: '奇妙模式',
+                event_mirror: '奇妙模式!!'
             }
         };
 
@@ -665,6 +674,43 @@
                 } else if (gameState.chaosEvent === 'TINY') {
                     drawSprites(i, x, y, cellSize, gap, false);
                 }
+
+                // MIRROR: draw trap (red) and mirror target (green)
+                if (gameState.chaosEvent === 'MIRROR') {
+                    if (i === gameState.trapIndex) {
+                        ctx.fillStyle = '#ff3b3b';
+                        ctx.shadowBlur = 15; ctx.shadowColor = '#ff3b3b';
+                        ctx.fillRect(x + gap + 2, y + gap + 2, cellSize - gap * 2 - 4, cellSize - gap * 2 - 4);
+                        ctx.shadowBlur = 0;
+                        // Draw X mark
+                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+                        ctx.beginPath();
+                        ctx.moveTo(x + cellSize * 0.3, y + cellSize * 0.3);
+                        ctx.lineTo(x + cellSize * 0.7, y + cellSize * 0.7);
+                        ctx.moveTo(x + cellSize * 0.7, y + cellSize * 0.3);
+                        ctx.lineTo(x + cellSize * 0.3, y + cellSize * 0.7);
+                        ctx.stroke();
+                    }
+                    if (i === gameState.mirrorTarget) {
+                        ctx.fillStyle = '#00ff88';
+                        ctx.shadowBlur = 15; ctx.shadowColor = '#00ff88';
+                        ctx.fillRect(x + gap + 2, y + gap + 2, cellSize - gap * 2 - 4, cellSize - gap * 2 - 4);
+                        ctx.shadowBlur = 0;
+                    }
+                }
+            }
+
+            // Draw mirror axis line
+            if (gameState.chaosEvent === 'MIRROR' && gameState.mirrorAxis && gameState.mirrorTarget !== -1) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+                if (gameState.mirrorAxis === 'vertical') {
+                    ctx.beginPath(); ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size); ctx.stroke();
+                } else if (gameState.mirrorAxis === 'horizontal') {
+                    ctx.beginPath(); ctx.moveTo(0, size / 2); ctx.lineTo(size, size / 2); ctx.stroke();
+                } else if (gameState.mirrorAxis === 'diagonal') {
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(size, size); ctx.stroke();
+                }
+                ctx.setLineDash([]);
             }
 
             // Particles
@@ -748,9 +794,10 @@
                 showBadge(`+${bonus}`);
                 showFeedback('ORBIT HIT!', THEMES[gameState.stage].color);
                 sounds.hit(100);
-                // Randomize next sector
+                // Randomize next sector, increase speed
                 gameState.orbitAngle = Math.random() * Math.PI * 2;
-                gameState.orbitSpeed = (Math.random() > 0.5 ? 1 : -1) * (0.03 + Math.random() * 0.03);
+                const dir = Math.random() > 0.5 ? 1 : -1;
+                gameState.orbitSpeed = dir * (Math.abs(gameState.orbitSpeed) * 1.05 + 0.002);
                 updateUI();
             } else {
                 endOrbitEvent(true);
@@ -817,6 +864,30 @@
                     gameState.tinyShape = shapes[Math.floor(Math.random() * shapes.length)];
                 }
 
+                // MIRROR mode: randomly spawn trap or mirror target
+                if (gameState.chaosEvent === 'MIRROR') {
+                    gameState.activeIndex = -1; // Don't use normal active
+                    const g = gameState.gridSize;
+                    const total = g * g;
+                    if (Math.random() < 0.3) {
+                        // Trap block (red, don't click, 2s auto-disappear)
+                        gameState.trapIndex = Math.floor(Math.random() * total);
+                        gameState.mirrorTarget = -1;
+                        gameState.mirrorAxis = null;
+                        if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+                        gameState.trapTimer = setTimeout(() => {
+                            gameState.trapIndex = -1;
+                            if (gameState.active) triggerBlock();
+                        }, 2000);
+                    } else {
+                        // Mirror target (green, click symmetric position)
+                        gameState.trapIndex = -1;
+                        const axes = ['vertical', 'horizontal', 'diagonal'];
+                        gameState.mirrorAxis = axes[Math.floor(Math.random() * axes.length)];
+                        gameState.mirrorTarget = Math.floor(Math.random() * total);
+                    }
+                }
+
                 gameState.startTime = performance.now();
                 gameState.isWaiting = false;
                 sounds.tick();
@@ -848,6 +919,47 @@
             const col = Math.floor(x / cellSize);
             const row = Math.floor(y / cellSize);
             const idx = row * gameState.gridSize + col;
+
+            // MIRROR mode input
+            if (gameState.chaosEvent === 'MIRROR') {
+                if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
+                // Clicked a trap!
+                if (idx === gameState.trapIndex) {
+                    gameState.trapIndex = -1;
+                    if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+                    handleError();
+                    triggerBlock();
+                    return;
+                }
+                // Mirror target active — check if click is on symmetric position
+                if (gameState.mirrorTarget !== -1) {
+                    const g = gameState.gridSize;
+                    const mRow = Math.floor(gameState.mirrorTarget / g);
+                    const mCol = gameState.mirrorTarget % g;
+                    let expectedRow, expectedCol;
+                    if (gameState.mirrorAxis === 'vertical') {
+                        expectedRow = mRow;
+                        expectedCol = g - 1 - mCol;
+                    } else if (gameState.mirrorAxis === 'horizontal') {
+                        expectedRow = g - 1 - mRow;
+                        expectedCol = mCol;
+                    } else { // diagonal
+                        expectedRow = mCol;
+                        expectedCol = mRow;
+                    }
+                    const expectedIdx = expectedRow * g + expectedCol;
+                    if (idx === expectedIdx) {
+                        const rt = Math.round(performance.now() - gameState.startTime);
+                        gameState.mirrorTarget = -1;
+                        handleSuccess(rt, x, y);
+                    } else {
+                        handleError();
+                        triggerBlock();
+                    }
+                    return;
+                }
+                return; // Nothing to click
+            }
 
             // Precision Hitbox for TINY
             if (gameState.chaosEvent === 'TINY' && (idx === gameState.activeIndex || idx === gameState.chaosTarget2)) {
@@ -904,6 +1016,12 @@
             }
 
             updateUI();
+
+            // Spin re-tilt on each hit
+            if (gameState.chaosEvent === 'SPIN') {
+                const angle = (Math.random() - 0.5) * 16; // -8 to 8 deg
+                document.body.style.transform = `rotate(${angle}deg)`;
+            }
 
             // If it was a double target and one is still active, don't trigger new block yet
             if (gameState.activeIndex === -1 && gameState.chaosTarget2 === -1) {
@@ -1060,7 +1178,7 @@
             const chaosLoop = setInterval(() => {
                 if (!gameState.active || gameState.mode !== 'ENTERTAINMENT') { clearInterval(chaosLoop); return; }
 
-                const events = ['DOUBLE', 'SPEED', 'TINY', 'SPIN', 'ORBIT'];
+                const events = ['DOUBLE', 'SPEED', 'TINY', 'SPIN', 'ORBIT', 'MIRROR'];
                 const ev = events[Math.floor(Math.random() * events.length)];
 
                 if (ev === 'ORBIT') {
@@ -1068,7 +1186,7 @@
                     startOrbitEvent();
                     const t = I18N[gameState.lang];
                     showBadge(t.event_orbit);
-                    return; // Orbit has its own lifecycle
+                    return;
                 }
 
                 gameState.chaosEvent = ev;
@@ -1076,16 +1194,19 @@
                 const t = I18N[gameState.lang];
                 const badgeTxt = ev === 'DOUBLE' ? t.event_double :
                     ev === 'SPEED' ? t.event_speed :
-                        ev === 'TINY' ? t.event_tiny : t.event_spin;
+                        ev === 'TINY' ? t.event_tiny :
+                            ev === 'MIRROR' ? t.event_mirror : t.event_spin;
                 showBadge(badgeTxt);
 
                 if (ev === 'SPIN') {
-                    document.body.style.transform = `rotate(${Math.random() > 0.5 ? 5 : -5}deg)`;
+                    document.body.style.transform = `rotate(${(Math.random() - 0.5) * 16}deg)`;
                 }
 
                 setTimeout(() => {
                     if (gameState.chaosEvent === ev) {
                         gameState.chaosEvent = null;
+                        gameState.trapIndex = -1;
+                        gameState.mirrorTarget = -1;
                         document.body.style.transform = 'rotate(0deg)';
                     }
                 }, 6000);
@@ -1096,6 +1217,9 @@
         function gameOver() {
             gameState.active = false;
             gameState.orbitActive = false;
+            gameState.trapIndex = -1;
+            gameState.mirrorTarget = -1;
+            if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
             document.body.style.transform = 'rotate(0deg)';
             saveStats();
             sounds.gameOver();

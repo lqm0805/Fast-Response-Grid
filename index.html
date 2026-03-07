@@ -843,9 +843,10 @@
 
             let baseDelay = 1000 - (gameState.hitCount * 15);
             if (gameState.chaosEvent === 'SPEED') baseDelay /= 3;
+            if (gameState.chaosEvent === 'MIRROR') baseDelay -= (gameState.mirrorConsecutive || 0) * 30; // speed up every consecutive hit
 
-            const minD = Math.max(gameState.chaosEvent === 'SPEED' ? 100 : 200, baseDelay);
-            const maxD = Math.max(gameState.chaosEvent === 'SPEED' ? 300 : 500, baseDelay * 2);
+            const minD = Math.max(gameState.chaosEvent === 'SPEED' ? 100 : 150, baseDelay);
+            const maxD = Math.max(gameState.chaosEvent === 'SPEED' ? 300 : 400, baseDelay * 2);
             const delay = Math.random() * (maxD - minD) + minD;
 
             setTimeout(() => {
@@ -869,8 +870,8 @@
                     gameState.activeIndex = -1; // Don't use normal active
                     const g = gameState.gridSize;
                     const total = g * g;
-                    if (Math.random() < 0.3) {
-                        // Trap block (red, don't click, 2s auto-disappear)
+                    if (Math.random() < 0.15) {
+                        // Trap block (red, don't click, 1s auto-disappear)
                         gameState.trapIndex = Math.floor(Math.random() * total);
                         gameState.mirrorTarget = -1;
                         gameState.mirrorAxis = null;
@@ -878,7 +879,7 @@
                         gameState.trapTimer = setTimeout(() => {
                             gameState.trapIndex = -1;
                             if (gameState.active) triggerBlock();
-                        }, 2000);
+                        }, 1000);
                     } else {
                         // Mirror target (green, click symmetric position)
                         gameState.trapIndex = -1;
@@ -927,6 +928,9 @@
                 if (idx === gameState.trapIndex) {
                     gameState.trapIndex = -1;
                     if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+                    gameState.mirrorConsecutive = 0;
+                    gameState.time = Math.max(0, gameState.time - 3);
+                    showBadge('-3s');
                     handleError();
                     triggerBlock();
                     return;
@@ -949,10 +953,21 @@
                     }
                     const expectedIdx = expectedRow * g + expectedCol;
                     if (idx === expectedIdx) {
+                        gameState.mirrorConsecutive = (gameState.mirrorConsecutive || 0) + 1;
+                        if (gameState.mirrorConsecutive % 10 === 0) {
+                            gameState.time += 5;
+                            showBadge('+5s BONUS!');
+                        } else {
+                            gameState.time += 1;
+                            showBadge('+1s');
+                        }
                         const rt = Math.round(performance.now() - gameState.startTime);
                         gameState.mirrorTarget = -1;
                         handleSuccess(rt, x, y);
                     } else {
+                        gameState.mirrorConsecutive = 0;
+                        gameState.time = Math.max(0, gameState.time - 3);
+                        showBadge('-3s');
                         handleError();
                         triggerBlock();
                     }
@@ -1284,12 +1299,13 @@
             document.getElementById('btn-selection-open').textContent = t.selection;
 
             const selBtns = document.querySelectorAll('.sel-btn');
-            if (selBtns.length >= 5) {
+            if (selBtns.length >= 6) {
                 selBtns[0].textContent = t.sel_double;
                 selBtns[1].textContent = t.sel_speed;
                 selBtns[2].textContent = t.sel_tiny;
                 selBtns[3].textContent = t.sel_spin;
                 selBtns[4].textContent = t.sel_orbit;
+                selBtns[5].textContent = t.sel_mirror;
             }
             const backBtn = document.querySelector('.back-btn');
             if (backBtn) backBtn.textContent = lang === 'EN' ? 'BACK' : '返回';

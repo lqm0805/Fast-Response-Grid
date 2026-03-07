@@ -675,22 +675,8 @@
                     drawSprites(i, x, y, cellSize, gap, false);
                 }
 
-                // MIRROR: draw trap (red) and mirror target (green)
+                // MIRROR: draw target (green)
                 if (gameState.chaosEvent === 'MIRROR') {
-                    if (i === gameState.trapIndex) {
-                        ctx.fillStyle = '#ff3b3b';
-                        ctx.shadowBlur = 15; ctx.shadowColor = '#ff3b3b';
-                        ctx.fillRect(x + gap + 2, y + gap + 2, cellSize - gap * 2 - 4, cellSize - gap * 2 - 4);
-                        ctx.shadowBlur = 0;
-                        // Draw X mark
-                        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
-                        ctx.beginPath();
-                        ctx.moveTo(x + cellSize * 0.3, y + cellSize * 0.3);
-                        ctx.lineTo(x + cellSize * 0.7, y + cellSize * 0.7);
-                        ctx.moveTo(x + cellSize * 0.7, y + cellSize * 0.3);
-                        ctx.lineTo(x + cellSize * 0.3, y + cellSize * 0.7);
-                        ctx.stroke();
-                    }
                     if (i === gameState.mirrorTarget) {
                         ctx.fillStyle = '#00ff88';
                         ctx.shadowBlur = 15; ctx.shadowColor = '#00ff88';
@@ -702,7 +688,8 @@
 
             // Draw mirror axis line
             if (gameState.chaosEvent === 'MIRROR' && gameState.mirrorAxis && gameState.mirrorTarget !== -1) {
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+                ctx.strokeStyle = gameState.mirrorAxisColor === 'red' ? '#ff3b3b' : '#00ff88';
+                ctx.lineWidth = 3; ctx.setLineDash([8, 6]);
                 if (gameState.mirrorAxis === 'vertical') {
                     ctx.beginPath(); ctx.moveTo(size / 2, 0); ctx.lineTo(size / 2, size); ctx.stroke();
                 } else if (gameState.mirrorAxis === 'horizontal') {
@@ -833,7 +820,7 @@
             triggerBlock();
         }
 
-        function triggerBlock() {
+        function triggerBlock(immediate = false) {
             if (!gameState.active || gameState.orbitActive) return;
             if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
 
@@ -847,7 +834,7 @@
 
             const minD = Math.max(gameState.chaosEvent === 'SPEED' ? 100 : 150, baseDelay);
             const maxD = Math.max(gameState.chaosEvent === 'SPEED' ? 300 : 400, baseDelay * 2);
-            const delay = Math.random() * (maxD - minD) + minD;
+            const delay = immediate ? 10 : (Math.random() * (maxD - minD) + minD);
 
             setTimeout(() => {
                 if (!gameState.active || gameState.orbitActive) return;
@@ -865,27 +852,28 @@
                     gameState.tinyShape = shapes[Math.floor(Math.random() * shapes.length)];
                 }
 
-                // MIRROR mode: randomly spawn trap or mirror target
+                // MIRROR mode: randomly spawn mirror target with RED or GREEN axis
                 if (gameState.chaosEvent === 'MIRROR') {
                     gameState.activeIndex = -1; // Don't use normal active
                     const g = gameState.gridSize;
                     const total = g * g;
-                    if (Math.random() < 0.15) {
-                        // Trap block (red, don't click, 1s auto-disappear)
-                        gameState.trapIndex = Math.floor(Math.random() * total);
-                        gameState.mirrorTarget = -1;
-                        gameState.mirrorAxis = null;
-                        if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+                    gameState.trapIndex = -1; // Not used anymore, just clean
+
+                    const axes = ['vertical', 'horizontal', 'diagonal'];
+                    gameState.mirrorAxis = axes[Math.floor(Math.random() * axes.length)];
+                    gameState.mirrorAxisColor = Math.random() < 0.15 ? 'red' : 'green';
+                    gameState.mirrorTarget = Math.floor(Math.random() * total);
+
+                    if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+
+                    // If red axis, automatically pop next block after 1s if didn't click
+                    if (gameState.mirrorAxisColor === 'red') {
                         gameState.trapTimer = setTimeout(() => {
-                            gameState.trapIndex = -1;
-                            if (gameState.active) triggerBlock();
+                            if (gameState.active && gameState.mirrorTarget !== -1) {
+                                gameState.mirrorTarget = -1;
+                                triggerBlock(true); // Immediate next
+                            }
                         }, 1000);
-                    } else {
-                        // Mirror target (green, click symmetric position)
-                        gameState.trapIndex = -1;
-                        const axes = ['vertical', 'horizontal', 'diagonal'];
-                        gameState.mirrorAxis = axes[Math.floor(Math.random() * axes.length)];
-                        gameState.mirrorTarget = Math.floor(Math.random() * total);
                     }
                 }
 
@@ -924,19 +912,21 @@
             // MIRROR mode input
             if (gameState.chaosEvent === 'MIRROR') {
                 if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
-                // Clicked a trap!
-                if (idx === gameState.trapIndex) {
-                    gameState.trapIndex = -1;
-                    if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
-                    gameState.mirrorConsecutive = 0;
-                    gameState.time = Math.max(0, gameState.time - 3);
-                    showBadge('-3s');
-                    handleError();
-                    triggerBlock();
-                    return;
-                }
-                // Mirror target active — check if click is on symmetric position
+
                 if (gameState.mirrorTarget !== -1) {
+                    // Clicked during red axis = Error!
+                    if (gameState.mirrorAxisColor === 'red') {
+                        gameState.mirrorTarget = -1;
+                        if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+                        gameState.mirrorConsecutive = 0;
+                        gameState.time = Math.max(0, gameState.time - 3);
+                        showBadge('-3s');
+                        handleError();
+                        triggerBlock(true); // Immediate trigger
+                        return;
+                    }
+
+                    // Green Axis: Check symmetry
                     const g = gameState.gridSize;
                     const mRow = Math.floor(gameState.mirrorTarget / g);
                     const mCol = gameState.mirrorTarget % g;
@@ -952,6 +942,7 @@
                         expectedCol = mRow;
                     }
                     const expectedIdx = expectedRow * g + expectedCol;
+
                     if (idx === expectedIdx) {
                         gameState.mirrorConsecutive = (gameState.mirrorConsecutive || 0) + 1;
                         if (gameState.mirrorConsecutive % 10 === 0) {
@@ -963,13 +954,14 @@
                         }
                         const rt = Math.round(performance.now() - gameState.startTime);
                         gameState.mirrorTarget = -1;
-                        handleSuccess(rt, x, y);
+                        handleSuccess(rt, x, y, true); // Immediate trigger
                     } else {
                         gameState.mirrorConsecutive = 0;
                         gameState.time = Math.max(0, gameState.time - 3);
                         showBadge('-3s');
+                        gameState.mirrorTarget = -1;
                         handleError();
-                        triggerBlock();
+                        triggerBlock(true); // Immediate trigger
                     }
                     return;
                 }
@@ -1002,7 +994,7 @@
             }
         }
 
-        function handleSuccess(rt, x, y) {
+        function handleSuccess(rt, x, y, immediateNext = false) {
             sounds.hit(rt);
             gameState.hitCount++;
             gameState.totalHits++;
@@ -1040,7 +1032,7 @@
 
             // If it was a double target and one is still active, don't trigger new block yet
             if (gameState.activeIndex === -1 && gameState.chaosTarget2 === -1) {
-                triggerBlock();
+                triggerBlock(immediateNext);
             }
         }
 

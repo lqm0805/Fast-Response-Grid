@@ -374,6 +374,7 @@
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
             </div>
             <div style="display: flex; gap: 8px;">
+                <button id="btn-quit" class="icon-btn" style="display: none;" onclick="quitGame()">🔙</button>
                 <button id="audio-toggle" class="icon-btn">🔊</button>
                 <button id="lang-toggle" class="icon-btn">EN</button>
                 <button id="theme-toggle" class="icon-btn">🌙</button>
@@ -1168,6 +1169,7 @@
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
             document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
+            document.getElementById('btn-quit').style.display = 'block';
             updateLives();
             updateUI();
 
@@ -1237,6 +1239,7 @@
             gameState.mirrorTarget = -1;
             if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
             document.body.style.transform = 'rotate(0deg)';
+            document.getElementById('btn-quit').style.display = 'none';
             saveStats();
             sounds.gameOver();
 
@@ -1248,6 +1251,30 @@
             document.querySelector('.menu-title').textContent = t.result + ": " + gameState.score.toLocaleString();
             document.getElementById('mode-label').textContent = t.gameover;
             loadStats();
+        }
+
+        function quitGame() {
+            gameState.active = false;
+            gameState.orbitActive = false;
+            gameState.trapIndex = -1;
+            gameState.mirrorTarget = -1;
+            if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
+            if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+            document.body.style.transform = 'rotate(0deg)';
+
+            document.getElementById('btn-quit').style.display = 'none';
+
+            // clear canvas
+            const dpr = window.devicePixelRatio || 1;
+            ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+            const overlay = document.getElementById('overlay');
+            overlay.style.display = 'flex';
+            setTimeout(() => overlay.style.opacity = 1, 10);
+
+            const t = I18N[gameState.lang];
+            document.querySelector('.menu-title').textContent = t.title;
+            document.getElementById('mode-label').textContent = t.standby;
         }
 
         function saveStats() {

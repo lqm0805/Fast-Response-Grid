@@ -5,6 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>极速反应网格 - 强化版</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg-color: #050505;
@@ -32,6 +35,57 @@
             --overlay-bg: rgba(255, 255, 255, 0.9);
             --btn-bg: rgba(0, 0, 0, 0.05);
             --btn-border: rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- PREMIUM THEME (Phase 14) --- */
+        [data-theme="premium"] {
+            --bg-color: #0f172a;
+            /* Deep slate */
+            --grid-color: rgba(255, 255, 255, 0.05);
+            --text-color: #f8fafc;
+            /* Vibrant neon palette */
+            --active-color: #0ea5e9;
+            --accent-color: #ec4899;
+            --error-color: #ef4444;
+            --score-color: #fbbf24;
+            --stage-color: #0ea5e9;
+
+            /* Glassmorphism settings */
+            --overlay-bg: rgba(15, 23, 42, 0.6);
+            --btn-bg: rgba(255, 255, 255, 0.03);
+            --btn-border: rgba(255, 255, 255, 0.1);
+            --glass-blur: blur(16px);
+            --glow-spread: 0 0 20px rgba(14, 165, 233, 0.5);
+        }
+
+        body[data-theme="premium"] {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* Animated dynamic background for premium mode */
+        body[data-theme="premium"]::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(14, 165, 233, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 20%, rgba(236, 72, 153, 0.15) 0%, transparent 30%);
+            background-size: 100% 100%;
+            animation: premiumBgDrift 20s linear infinite alternate;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        @keyframes premiumBgDrift {
+            0% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            100% {
+                transform: rotate(360deg) scale(1.2);
+            }
         }
 
         * {
@@ -159,12 +213,21 @@
             height: 100%;
             background: var(--overlay-bg);
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             z-index: 100;
             transition: opacity 0.4s;
+        }
+
+        [data-theme="premium"] #overlay {
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
         }
 
         .menu-title {
@@ -186,7 +249,7 @@
         }
 
         button {
-            background: transparent;
+            background: var(--btn-bg);
             border: 1px solid var(--btn-border);
             color: var(--text-color);
             padding: 16px;
@@ -194,16 +257,32 @@
             font-weight: bold;
             letter-spacing: 2px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             border-radius: 8px;
             position: relative;
             overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        [data-theme="premium"] button {
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
         }
 
         button:hover {
             border-color: var(--active-color);
-            background: var(--btn-bg);
+            background: rgba(255, 255, 255, 0.1);
             transform: translateY(-2px);
+        }
+
+        [data-theme="premium"] button:hover {
+            box-shadow: var(--glow-spread);
+            background: rgba(14, 165, 233, 0.15);
         }
 
         button.primary {
@@ -211,10 +290,21 @@
             color: var(--active-color);
         }
 
+        [data-theme="premium"] button.primary {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.2) 0%, rgba(236, 72, 153, 0.1) 100%);
+        }
+
         button.primary:hover {
             background: var(--active-color);
             color: #000;
             box-shadow: 0 0 30px rgba(0, 242, 255, 0.4);
+        }
+
+        [data-theme="premium"] button.primary:hover {
+            background: linear-gradient(135deg, #0ea5e9, #ec4899);
+            color: #fff;
+            box-shadow: 0 0 25px rgba(236, 72, 153, 0.5);
+            border-color: transparent;
         }
 
         .sel-grid {
@@ -246,6 +336,18 @@
             display: none;
             flex-direction: column;
             align-items: center;
+        }
+
+        .btn-icon {
+            font-size: 1.2rem;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+        }
+
+        .style-toggle-btn {
+            margin-top: 15px;
+            font-size: 0.8rem !important;
+            padding: 8px 16px;
+            border-radius: 20px !important;
         }
 
         #countdown {
@@ -399,11 +501,21 @@
         <div id="overlay">
             <div class="menu-title" id="menu-title">GRID SPEED</div>
             <div class="btn-group">
-                <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">ADVENTURE</button>
-                <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">SURVIVAL</button>
-                <button class="primary" id="btn-entertainment"
-                    onclick="startGame('ENTERTAINMENT')">ENTERTAINMENT</button>
-                <button id="btn-selection-open" onclick="showSelMenu()">SELECTION MODE</button>
+                <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">
+                    <span class="btn-icon">🌌</span> <span id="txt-adv">ADVENTURE</span>
+                </button>
+                <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">
+                    <span class="btn-icon">⚡</span> <span id="txt-surv">SURVIVAL</span>
+                </button>
+                <button class="primary" id="btn-entertainment" onclick="startGame('ENTERTAINMENT')">
+                    <span class="btn-icon">🎭</span> <span id="txt-ent">ENTERTAINMENT</span>
+                </button>
+                <button id="btn-selection-open" onclick="showSelMenu()">
+                    <span class="btn-icon">⚙️</span> <span id="txt-sel">SELECTION MODE</span>
+                </button>
+                <button id="btn-style-toggle" class="style-toggle-btn" onclick="toggleStyle()">
+                    <span class="btn-icon">✨</span> <span id="txt-style">STYLE: MINIMAL</span>
+                </button>
             </div>
             <div id="sel-menu">
                 <div class="sel-grid">
@@ -445,8 +557,9 @@
             bestReaction: Infinity,
             hitCount: 0,
             totalHits: 0,
-            muted: false,
-            lang: 'EN',
+            muted: localStorage.getItem('muted') === 'true',
+            lang: localStorage.getItem('lang') || 'EN',
+            visualTheme: localStorage.getItem('visualTheme') || 'MINIMAL',
             chaosEvent: null,
             chaosTarget2: -1,
             expiryTimer: null,
@@ -487,33 +600,39 @@
                 sel_spin: 'GRID SPIN',
                 sel_orbit: 'ORBIT RING',
                 sel_mirror: 'MIRROR',
-                event_mirror: 'MIRROR MODE!!'
+                event_mirror: 'MIRROR MODE!!',
+                style_toggle: 'STYLE: ',
+                style_min: 'MINIMAL',
+                style_premium: 'PREMIUM'
             },
             CN: {
                 title: '极速反应',
                 adventure: '冒险模式',
                 survival: '生存模式',
-                entertainment: '娱乐模式',
-                best: '最高纪录',
+                entertainment: '娱乐混战',
+                best: '最佳反应',
                 combo: '连击',
-                clicks: '总点击量',
+                clicks: '总点击数',
                 hiscore: '最高分',
                 gameover: '游戏结束',
-                standby: '准备开始',
-                result: '本次得分',
-                event_double: '双重幻影!!',
-                event_speed: '极限爆发!!',
-                event_tiny: '奇幻形状!!',
-                event_spin: '空间扭曲!!',
-                event_orbit: '轨道圆环!!',
+                standby: '准备',
+                result: '最终得分',
+                event_double: '双重目标!!',
+                event_speed: '极速加倍!!',
+                event_tiny: '微缩方块!!',
+                event_spin: '空间扭曲',
+                event_orbit: '轨道圆环',
                 selection: '自选模式',
-                sel_double: '双重幻影',
-                sel_speed: '极限爆发',
-                sel_tiny: '奇幻形状',
+                sel_double: '双重目标',
+                sel_speed: '极速加倍',
+                sel_tiny: '微缩方块',
                 sel_spin: '空间扭曲',
                 sel_orbit: '轨道圆环',
                 sel_mirror: '奇妙模式',
-                event_mirror: '奇妙模式!!'
+                event_mirror: '奇妙模式!!',
+                style_toggle: '风格: ',
+                style_min: '极简',
+                style_premium: '高级'
             }
         };
 
@@ -1150,6 +1269,7 @@
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
                 lang: gameState.lang,
+                visualTheme: gameState.visualTheme,
                 chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
@@ -1316,17 +1436,23 @@
             gameState.lang = lang;
             localStorage.setItem('lang', lang);
             document.getElementById('lang-toggle').textContent = lang;
+            applyLang();
+        }
 
-            const t = I18N[lang];
-            const titleEl = document.querySelector('.menu-title');
+        function applyLang() {
+            const t = I18N[gameState.lang];
+            const titleEl = document.getElementById('menu-title');
             if (titleEl) titleEl.textContent = t.title;
+            const advEl = document.getElementById('txt-adv');
+            if (advEl) advEl.textContent = t.adventure;
+            const survEl = document.getElementById('txt-surv');
+            if (survEl) survEl.textContent = t.survival;
+            const entEl = document.getElementById('txt-ent');
+            if (entEl) entEl.textContent = t.entertainment;
+            const selEl = document.getElementById('txt-sel');
+            if (selEl) selEl.textContent = t.selection;
 
-            document.getElementById('btn-adventure').textContent = t.adventure;
-            document.getElementById('btn-survival').textContent = t.survival;
-            document.getElementById('btn-entertainment').textContent = t.entertainment;
-            document.getElementById('btn-selection-open').textContent = t.selection;
-
-            const selBtns = document.querySelectorAll('.sel-btn');
+            const selBtns = document.getElementById('sel-menu').querySelectorAll('.sel-btn');
             if (selBtns.length >= 6) {
                 selBtns[0].textContent = t.sel_double;
                 selBtns[1].textContent = t.sel_speed;
@@ -1336,18 +1462,50 @@
                 selBtns[5].textContent = t.sel_mirror;
             }
             const backBtn = document.querySelector('.back-btn');
-            if (backBtn) backBtn.textContent = lang === 'EN' ? 'BACK' : '返回';
+            if (backBtn) backBtn.textContent = gameState.lang === 'EN' ? 'BACK' : '返回';
 
-            document.getElementById('label-clicks').textContent = t.clicks;
-            document.getElementById('label-hi-score').textContent = t.hiscore;
+            const limitC = document.getElementById('label-clicks');
+            if (limitC) limitC.textContent = gameState.lang === 'EN' ? 'LIFETIME CLICKS' : '总点击数';
+            const limitH = document.getElementById('label-hi-score');
+            if (limitH) limitH.textContent = gameState.lang === 'EN' ? 'HI-SCORE' : '最高分';
+
+            updateStyleBtnLabel();
 
             // Stats labels
             const metaStats = document.getElementById('meta-stats').children;
-            metaStats[0].innerHTML = `${t.best}: <span id="best-val">${gameState.bestReaction === Infinity ? '--' : gameState.bestReaction}</span>ms`;
-            metaStats[1].innerHTML = `${t.combo}: <span id="combo-val">${gameState.combo}</span>`;
+            if (metaStats.length >= 2) {
+                metaStats[0].innerHTML = `${t.best}: <span id="best-val">${gameState.bestReaction === Infinity ? '--' : gameState.bestReaction}</span>ms`;
+                metaStats[1].innerHTML = `${t.combo}: <span id="combo-val">${gameState.combo}</span>`;
+            }
 
             if (!gameState.active) {
-                document.getElementById('mode-label').textContent = t.standby;
+                const modeLabel = document.getElementById('mode-label');
+                if (modeLabel) modeLabel.textContent = t.standby;
+            }
+        }
+
+        function toggleStyle() {
+            gameState.visualTheme = gameState.visualTheme === 'MINIMAL' ? 'PREMIUM' : 'MINIMAL';
+            localStorage.setItem('visualTheme', gameState.visualTheme);
+            applyTheme();
+        }
+
+        function applyTheme() {
+            if (gameState.visualTheme === 'PREMIUM') {
+                document.body.setAttribute('data-theme', 'premium');
+            } else {
+                // If there's a light theme, we could handle it here, but default is minimal UI
+                document.body.removeAttribute('data-theme');
+            }
+            updateStyleBtnLabel();
+            if (!gameState.active) draw(); // Redraw menu background
+        }
+
+        function updateStyleBtnLabel() {
+            const t = I18N[gameState.lang];
+            const btnTxt = document.getElementById('txt-style');
+            if (btnTxt) {
+                btnTxt.textContent = t.style_toggle + (gameState.visualTheme === 'MINIMAL' ? t.style_min : t.style_premium);
             }
         }
 
@@ -1357,30 +1515,36 @@
         }
 
         function hideSelMenu() {
-            document.querySelector('.btn-group').style.display = 'flex';
             document.getElementById('sel-menu').style.display = 'none';
+            document.querySelector('.btn-group').style.display = 'flex';
+        }
+
+        // --- THEME (Light/Dark Original) ---
+        function initTheme() {
+            const toggleBtn = document.getElementById('theme-toggle');
+            if (toggleBtn) {
+                toggleBtn.addEventListener('click', () => {
+                    if (gameState.visualTheme === 'PREMIUM') {
+                        // Light mode isn't compatible with premium currently, fallback to toggle style
+                        toggleStyle();
+                        return;
+                    }
+                    const isLight = document.body.getAttribute('data-theme') === 'light';
+                    if (isLight) {
+                        document.body.removeAttribute('data-theme');
+                        toggleBtn.textContent = '🌙';
+                    } else {
+                        document.body.setAttribute('data-theme', 'light');
+                        toggleBtn.textContent = '☀️';
+                    }
+                });
+            }
+            applyTheme();
         }
 
         document.getElementById('lang-toggle').addEventListener('click', () => {
             setLang(gameState.lang === 'EN' ? 'CN' : 'EN');
-        });
-
-        // --- THEME ---
-        function initTheme() {
-            const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-            setTheme(savedTheme);
-        }
-
-        function setTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('theme', theme);
-            const toggleBtn = document.getElementById('theme-toggle');
-            if (toggleBtn) toggleBtn.textContent = theme === 'light' ? '☀️' : '🌙';
-        }
-
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            const currentTheme = document.documentElement.getAttribute('data-theme');
-            setTheme(currentTheme === 'light' ? 'dark' : 'light');
+            updateUI();
         });
 
         canvas.addEventListener('mousedown', handleInput);

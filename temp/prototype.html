@@ -841,7 +841,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.5.5</div>
+    <div class="version-tag">v1.5.6</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -1796,6 +1796,9 @@
             // 4. Countdown
             const cd = document.getElementById('countdown');
             cd.style.display = 'block';
+
+            if (gameState.chaosEvent === 'ORBIT' || fixedType === 'ORBIT') startOrbitEvent();
+
             for (let i = 3; i > 0; i--) {
                 if (!gameState.isCountDown) return;
                 cd.textContent = i;
@@ -1813,7 +1816,6 @@
             gameState.active = true;
             gs.style.opacity = '1'; // Full visibility
 
-            if (gameState.chaosEvent === 'ORBIT' || fixedType === 'ORBIT') startOrbitEvent();
             if (gameState.chaosEvent === 'SPIN' || fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
 
             if (mode === 'CLASSIC' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();

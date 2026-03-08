@@ -76,6 +76,13 @@
             border-radius: 4px;
         }
 
+        #game-stats {
+            display: none;
+            width: 100%;
+            flex-direction: column;
+            align-items: center;
+        }
+
         #score-main {
             font-size: 2.5rem;
             font-weight: 900;
@@ -164,6 +171,22 @@
             align-items: center;
             max-width: 400px;
             width: 90%;
+            z-index: 200;
+        }
+
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--overlay-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
         }
 
         .menu-title {
@@ -229,13 +252,19 @@
 
         .back-btn {
             margin-top: 20px;
-            font-size: 0.7rem !important;
-            opacity: 0.7;
+            font-size: 0.85rem !important;
+            opacity: 0.8;
             border: none !important;
             text-decoration: underline;
             background: none !important;
             color: var(--text-color);
             cursor: pointer;
+            box-shadow: none !important;
+        }
+
+        .back-btn:hover {
+            background: none !important;
+            opacity: 1;
         }
 
         #sel-menu {
@@ -384,13 +413,15 @@
                 <button id="lang-toggle" class="icon-btn">EN</button>
             </div>
         </div>
-        <div id="score-main">0</div>
-        <div id="meta-stats">
-            <div>BEST: <span id="best-val">--</span>ms</div>
-            <div>COMBO: <span id="combo-val">0</span></div>
-        </div>
-        <div id="status-bar">
-            <div id="status-fill"></div>
+        <div id="game-stats">
+            <div id="score-main">0</div>
+            <div id="meta-stats">
+                <div>BEST: <span id="best-val">--</span>ms</div>
+                <div>COMBO: <span id="combo-val">0</span></div>
+            </div>
+            <div id="status-bar">
+                <div id="status-fill"></div>
+            </div>
         </div>
     </div>
 
@@ -427,12 +458,33 @@
                         <button class="sel-btn primary" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
                         <button class="sel-btn primary" onclick="startGame('SELECTION', 'MIRROR')">MIRROR</button>
                     </div>
-                    <button class="back-btn" onclick="hideSelMenu()">BACK</button>
+                    <button class="back-btn" onclick="hideSelMenu()" id="btn-back">BACK</button>
                 </div>
-                <div class="stats-footer" id="global-stats">
-                    <span id="label-clicks">LIFETIME CLICKS</span>: <span id="total-clicks">0</span><br>
-                    <span id="label-hi-score">HI-SCORE</span>: <span id="hi-score">0</span>
+                <button class="back-btn" id="btn-history" onclick="showHistory()">HISTORY / 历史记录</button>
+            </div>
+        </div>
+
+        <div id="game-over-modal" class="modal-overlay">
+            <div class="shadcn-card">
+                <div class="menu-title" id="go-title">GAME OVER</div>
+                <div id="go-score"
+                    style="font-size: 3rem; font-weight: 900; margin-bottom: 20px; color: var(--score-color);">0</div>
+                <div style="display: flex; gap: 10px; width: 100%;">
+                    <button class="primary" style="flex: 1;" onclick="playAgain()" id="btn-play-again">PLAY
+                        AGAIN</button>
+                    <button style="flex: 1;" onclick="goToMenu()" id="btn-go-home">HOME</button>
                 </div>
+            </div>
+        </div>
+
+        <div id="history-modal" class="modal-overlay">
+            <div class="shadcn-card" style="max-height: 80vh; overflow-y: auto;">
+                <div class="menu-title" id="history-title" style="margin-bottom: 10px;">HISTORY</div>
+                <div id="history-content"
+                    style="width: 100%; text-align: left; font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+                    <!-- Content injected via JS -->
+                </div>
+                <button onclick="hideHistory()" id="btn-close-history" style="width: 100%;">CLOSE</button>
             </div>
         </div>
     </div>
@@ -1230,6 +1282,8 @@
             document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
             document.getElementById('btn-quit').style.display = 'flex';
+            document.getElementById('game-stats').style.display = 'flex';
+
             updateLives();
             updateUI();
 
@@ -1272,19 +1326,33 @@
             gameState.trapIndex = -1;
             gameState.mirrorTarget = -1;
             if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
+            if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
             document.body.style.transform = 'rotate(0deg)';
             document.getElementById('btn-quit').style.display = 'none';
+            document.getElementById('game-stats').style.display = 'none';
             saveStats();
             sounds.gameOver();
 
-            const overlay = document.getElementById('overlay');
-            overlay.style.display = 'flex';
-            setTimeout(() => overlay.style.opacity = 1, 10);
-
+            const goModal = document.getElementById('game-over-modal');
+            goModal.style.display = 'flex';
             const t = I18N[gameState.lang];
-            document.querySelector('.menu-title').textContent = t.result + ": " + gameState.score.toLocaleString();
+            document.getElementById('go-title').textContent = t.gameover;
+            document.getElementById('go-score').textContent = t.result + ": " + gameState.score.toLocaleString();
+            document.getElementById('btn-play-again').textContent = t.lang === 'EN' ? 'PLAY AGAIN' : '再来一局';
+            document.getElementById('btn-go-home').textContent = t.lang === 'EN' ? 'HOME' : '回到主页';
             document.getElementById('mode-label').textContent = t.gameover;
-            loadStats();
+        }
+
+        function playAgain() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            let m = gameState.mode;
+            let sub = gameState.fixedChaos;
+            startGame(m, sub);
+        }
+
+        function goToMenu() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            quitGame();
         }
 
         function quitGame() {
@@ -1297,6 +1365,7 @@
             document.body.style.transform = 'rotate(0deg)';
 
             document.getElementById('btn-quit').style.display = 'none';
+            document.getElementById('game-stats').style.display = 'none';
 
             // clear canvas
             const dpr = window.devicePixelRatio || 1;
@@ -1307,21 +1376,53 @@
             setTimeout(() => overlay.style.opacity = 1, 10);
 
             const t = I18N[gameState.lang];
-            document.querySelector('.menu-title').textContent = t.title;
+            document.getElementById('menu-title').textContent = t.title;
             document.getElementById('mode-label').textContent = t.standby;
         }
 
         function saveStats() {
-            const hi = localStorage.getItem('hi-score') || 0;
-            if (gameState.score > hi) localStorage.setItem('hi-score', gameState.score);
+            let history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
+            let m = gameState.mode;
+            let sub = gameState.fixedChaos;
+            let key = sub ? m + '_' + sub : m;
 
-            const total = parseInt(localStorage.getItem('total-clicks') || 0);
-            localStorage.setItem('total-clicks', total + gameState.hitCount);
+            if (!history[key]) history[key] = { hiScore: 0, hiDate: '', maxCombo: 0, comboDate: '' };
+            let now = new Date().toLocaleDateString();
+
+            if (gameState.score > history[key].hiScore) {
+                history[key].hiScore = gameState.score;
+                history[key].hiDate = now;
+            }
+            if (gameState.combo > history[key].maxCombo) {
+                history[key].maxCombo = gameState.combo;
+                history[key].comboDate = now;
+            }
+            localStorage.setItem('gameHistory', JSON.stringify(history));
+        }
+
+        function showHistory() {
+            document.getElementById('history-modal').style.display = 'flex';
+            const hc = document.getElementById('history-content');
+            let history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
+            let html = '';
+            for (let k in history) {
+                let d = history[k];
+                html += `<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                            <strong>${k}</strong><br>
+                            High Score: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
+                            Max Combo: ${d.maxCombo} (${d.comboDate || 'N/A'})
+                         </div>`;
+            }
+            if (html === '') html = 'No history yet.';
+            hc.innerHTML = html;
+        }
+
+        function hideHistory() {
+            document.getElementById('history-modal').style.display = 'none';
         }
 
         function loadStats() {
-            document.getElementById('hi-score').textContent = (localStorage.getItem('hi-score') || 0).toLocaleString();
-            document.getElementById('total-clicks').textContent = (localStorage.getItem('total-clicks') || 0).toLocaleString();
+            // Not needed in standby HUD
         }
 
         // --- AUDIO ---

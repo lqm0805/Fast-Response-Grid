@@ -224,6 +224,7 @@
             z-index: 10;
             margin-bottom: 8px;
             flex-shrink: 0;
+            will-change: transform, margin-bottom;
         }
 
         .hud-top {
@@ -255,7 +256,8 @@
             max-height: 0;
             visibility: hidden;
             opacity: 0;
-            transition: opacity 0.3s, max-height 0.3s;
+            transition: opacity 0.4s ease, max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            will-change: max-height, opacity;
         }
 
         /* ===== 模块4：分数与发光文字 ===== */
@@ -404,6 +406,7 @@
             max-width: 450px;
             width: 90%;
             z-index: 200;
+            will-change: opacity, transform;
         }
 
         .modal-overlay {
@@ -1586,17 +1589,19 @@
 
         // --- FLOW ---
         async function startGame(mode, fixedType = null) {
-            document.getElementById('overlay').style.opacity = 0;
-            setTimeout(() => document.getElementById('overlay').style.display = 'none', 400);
+            // 1. Start Menu Fadeout (Highest priority)
+            const overlay = document.getElementById('overlay');
+            overlay.style.opacity = 0;
+            setTimeout(() => overlay.style.display = 'none', 400);
 
-            // 1. Expand HUD IMMEDIATELY to reserve space and prevent layout shift
+            // 2. STAGGERED HUD Expansion (Wait 80ms for menu blur to start clearing)
+            await new Promise(r => setTimeout(r, 80));
             const gs = document.getElementById('game-stats');
-            gs.style.maxHeight = '300px';
-            // Keep content invisible during countdown if desired, but here we show it to be 1:1 consistent
+            gs.style.maxHeight = '180px';
             gs.style.visibility = 'visible';
-            gs.style.opacity = '0.3'; // Faded during countdown
+            gs.style.opacity = '0.3';
 
-            // 2. Init State fully (including orbitActive) for pre-render
+            // 3. Init State
             gameState = {
                 active: false,
                 mode: mode,

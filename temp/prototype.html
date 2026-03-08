@@ -115,10 +115,11 @@
         /* 赛博动态背景光晕 + 透视网格 */
         .cyber-bg {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: -10%;
+            /* Larger to cover tilt */
+            left: -10%;
+            width: 120%;
+            height: 120%;
             z-index: -1;
             overflow: hidden;
             background: radial-gradient(circle at center, #1a0a2e 0%, #05050a 100%);
@@ -472,9 +473,17 @@
             will-change: opacity, transform;
         }
 
+        html,
         body {
+            background-color: #05050a;
+            /* Fix white borders */
             margin: 0;
             padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        body {
             padding-top: env(safe-area-inset-top);
             display: flex;
             flex-direction: column;
@@ -482,7 +491,6 @@
             justify-content: center;
             /* Back to center for foundational balance */
             min-height: 100vh;
-            background: var(--bg-dark);
             color: var(--text-main);
             font-family: 'Inter', sans-serif;
             overflow: hidden;
@@ -837,7 +845,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.3.1</div>
+    <div class="version-tag">v1.4.0</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -847,10 +855,13 @@
         <div class="hud-top">
             <div style="display: flex; align-items: center;">
                 <button id="btn-quit" class="icon-btn"
-                    style="display: none; width: 62px; height: 62px; margin-right: 15px; border: none; background: transparent; padding: 0; outline: none;"
+                    style="display: none; width: 44px; height: 44px; margin-right: 15px; border: 2px solid var(--primary-color); border-radius: 50%; background: rgba(0,243,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--primary-color); box-shadow: 0 0 10px rgba(0,243,255,0.3);"
                     onclick="quitGame()">
-                    <img src="data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII="
-                        style="width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.5)); display: block;">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
                 </button>
                 <div id="mode-label" style="display: none;"></div>
             </div>
@@ -1495,7 +1506,7 @@
 
                     if (idx === expectedIdx) {
                         gameState.mirrorConsecutive = (gameState.mirrorConsecutive || 0) + 1;
-                        if (gameState.mirrorConsecutive % 10 === 0) {
+                        if (gameState.mirrorConsecutive % 5 === 0) {
                             gameState.time = Math.min(60, gameState.time + 2);
                             showBadge('+2s BONUS!');
                         }

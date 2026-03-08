@@ -106,10 +106,12 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            min-height: 100vh;
             height: 100vh;
             overflow: hidden;
             transition: transform var(--transition-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
+            padding-top: env(safe-area-inset-top);
         }
 
         body::before {
@@ -170,7 +172,8 @@
             flex-direction: column;
             align-items: center;
             z-index: 10;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
+            flex-shrink: 0;
         }
 
         .hud-top {
@@ -198,9 +201,11 @@
             width: 100%;
             flex-direction: column;
             align-items: center;
+            overflow: hidden;
+            max-height: 0;
             visibility: hidden;
             opacity: 0;
-            transition: opacity 0.3s;
+            transition: opacity 0.3s, max-height 0.3s;
         }
 
         /* ===== 模块4：分数与发光文字 ===== */
@@ -1530,6 +1535,7 @@
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
             document.getElementById('btn-quit').style.display = 'flex';
             const gs = document.getElementById('game-stats');
+            gs.style.maxHeight = '300px';
             gs.style.visibility = 'visible';
             gs.style.opacity = '1';
 
@@ -1579,6 +1585,7 @@
             document.body.style.transform = 'rotate(0deg)';
             document.getElementById('btn-quit').style.display = 'none';
             const gs1 = document.getElementById('game-stats');
+            gs1.style.maxHeight = '0';
             gs1.style.visibility = 'hidden';
             gs1.style.opacity = '0';
             saveStats();
@@ -1618,6 +1625,7 @@
 
             document.getElementById('btn-quit').style.display = 'none';
             const gs2 = document.getElementById('game-stats');
+            gs2.style.maxHeight = '0';
             gs2.style.visibility = 'hidden';
             gs2.style.opacity = '0';
 

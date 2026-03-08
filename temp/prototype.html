@@ -97,9 +97,7 @@
 
         /* ===== 模块2：动态背景 ===== */
         body {
-            background: linear-gradient(135deg, var(--bg-color-start), var(--bg-color-mid), var(--bg-color-end));
-            background-size: 400% 400%;
-            animation: bg-shift 20s ease infinite;
+            background: #05050a;
             color: var(--text-color);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
@@ -112,6 +110,58 @@
             transition: transform var(--transition-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
             padding-top: env(safe-area-inset-top);
+        }
+
+        /* 赛博动态背景光晕 */
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: #05050a;
+        }
+
+        .cyber-glow-1 {
+            position: absolute;
+            width: 80vmax;
+            height: 80vmax;
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.08) 0%, transparent 65%);
+            top: -20%;
+            left: -20%;
+            animation: glow-move-1 25s ease-in-out infinite alternate;
+        }
+
+        .cyber-glow-2 {
+            position: absolute;
+            width: 70vmax;
+            height: 70vmax;
+            background: radial-gradient(circle, rgba(189, 0, 255, 0.08) 0%, transparent 65%);
+            bottom: -15%;
+            right: -15%;
+            animation: glow-move-2 30s ease-in-out infinite alternate-reverse;
+        }
+
+        @keyframes glow-move-1 {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(25%, 15%) scale(1.1);
+            }
+        }
+
+        @keyframes glow-move-2 {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            100% {
+                transform: translate(-20%, -20%) scale(1.2);
+            }
         }
 
         body::before {
@@ -287,6 +337,40 @@
             width: 100%;
             height: 100%;
             cursor: crosshair;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 5;
+        }
+
+        /* 玻璃瓷砖层 */
+        #glass-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            z-index: 1;
+            padding: 6px;
+            pointer-events: none;
+        }
+
+        .glass-tile {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin: 6px;
+            /* Match the gap in JS draw */
+            transition: border-color 0.3s;
+        }
+
+        .orbit-hider .glass-tile {
+            display: none;
+            /* Hide grid tiles in Orbit mode */
         }
 
         #overlay {
@@ -655,6 +739,11 @@
 </head>
 
 <body>
+    <div class="cyber-bg">
+        <div class="cyber-glow-1"></div>
+        <div class="cyber-glow-2"></div>
+    </div>
+
     <div id="hud">
         <div class="hud-top">
             <div style="display: flex; align-items: center;">
@@ -680,6 +769,7 @@
     </div>
 
     <div id="game-view">
+        <div id="glass-grid"></div>
         <canvas id="gameCanvas"></canvas>
         <div id="countdown"></div>
         <div id="badge-container"></div>
@@ -954,15 +1044,20 @@
 
             ctx.clearRect(0, 0, size, size);
 
-            // Grid
+            // Re-sync glass grid tiles if needed
+            const glassContainer = document.getElementById('glass-grid');
+            if (glassContainer.children.length !== gameState.gridSize * gameState.gridSize) {
+                updateGlassTiles();
+            }
+
+            // Grid rendering (Canvas side)
             for (let i = 0; i < gameState.gridSize * gameState.gridSize; i++) {
                 const x = (i % gameState.gridSize) * cellSize;
                 const y = Math.floor(i / gameState.gridSize) * cellSize;
                 const gap = 6;
 
-                ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
+                // We no longer draw the base square on canvas (it's DOM now)
+                // ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; 
 
                 if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
                     drawSprites(i, x, y, cellSize, gap, true);
@@ -975,7 +1070,7 @@
                     if (i === gameState.mirrorTarget) {
                         ctx.fillStyle = '#00ff88';
                         ctx.shadowBlur = 15; ctx.shadowColor = '#00ff88';
-                        ctx.fillRect(x + gap + 2, y + gap + 2, cellSize - gap * 2 - 4, cellSize - gap * 2 - 4);
+                        ctx.fillRect(x + gap + 4, y + gap + 4, cellSize - gap * 2 - 8, cellSize - gap * 2 - 8);
                         ctx.shadowBlur = 0;
                     }
                 }
@@ -1471,6 +1566,24 @@
             });
         }
 
+        function updateGlassTiles() {
+            const container = document.getElementById('glass-grid');
+            const g = gameState.gridSize || 4;
+            container.style.gridTemplateColumns = `repeat(${g}, 1fr)`;
+            container.style.gridTemplateRows = `repeat(${g}, 1fr)`;
+            container.innerHTML = '';
+            for (let i = 0; i < g * g; i++) {
+                const tile = document.createElement('div');
+                tile.className = 'glass-tile';
+                container.appendChild(tile);
+            }
+            if (gameState.orbitActive) {
+                document.getElementById('game-view').classList.add('orbit-hider');
+            } else {
+                document.getElementById('game-view').classList.remove('orbit-hider');
+            }
+        }
+
         // --- FLOW ---
         async function startGame(mode, fixedType = null) {
             document.getElementById('overlay').style.opacity = 0;
@@ -1511,6 +1624,8 @@
                 orbitAngle: 0,
                 orbitSpeed: 0.05
             };
+
+            updateGlassTiles();
 
             // 3. UI Labels and visibility (Before Countdown)
             const t = I18N.CN;

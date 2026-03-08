@@ -305,11 +305,11 @@
             border: 1px solid var(--glass-border);
             border-radius: var(--border-radius-lg);
             box-shadow: var(--glass-shadow);
-            padding: 2.5rem 2rem;
+            padding: 3.5rem 2.5rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 380px;
+            max-width: 450px;
             width: 90%;
             z-index: 200;
         }
@@ -330,31 +330,31 @@
         }
 
         .menu-title {
-            font-size: 2.8rem;
+            font-size: 3.5rem;
             font-weight: 900;
-            margin-bottom: 30px;
-            letter-spacing: 8px;
+            margin-bottom: 40px;
+            letter-spacing: 12px;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.8)) drop-shadow(0 0 40px rgba(189, 0, 255, 0.6));
+            filter: drop-shadow(0 0 25px rgba(0, 243, 255, 1)) drop-shadow(0 0 50px rgba(189, 0, 255, 0.8));
         }
 
         /* ===== 模块7：霓虹按钮系统 ===== */
         .btn-group {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            width: 260px;
+            gap: 18px;
+            width: 320px;
         }
 
         button {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-color);
-            padding: 14px 18px;
-            font-size: 0.9rem;
+            padding: 20px 24px;
+            font-size: 1.15rem;
             font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-normal) ease;
@@ -363,7 +363,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
         }
 
         button:hover {
@@ -405,20 +405,20 @@
         .sel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 14px;
             width: 100%;
-            margin-top: 12px;
+            margin-top: 18px;
         }
 
         .sel-btn {
-            padding: 14px 10px;
-            font-size: 0.85rem;
+            padding: 18px 14px;
+            font-size: 1rem;
             text-align: center;
         }
 
         .back-btn {
-            margin-top: 18px;
-            font-size: 0.85rem !important;
+            margin-top: 24px;
+            font-size: 1.05rem !important;
             opacity: 0.7;
             border: none !important;
             text-decoration: none;
@@ -652,9 +652,6 @@
             </div>
             <div id="lives-container" style="display: none;">
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button id="audio-toggle" class="icon-btn">🔊</button>
             </div>
         </div>
         <div id="game-stats">
@@ -1707,12 +1704,7 @@
         function setMuted(muted) {
             gameState.muted = muted;
             localStorage.setItem('muted', muted);
-            document.getElementById('audio-toggle').textContent = muted ? '🔇' : '🔊';
         }
-
-        document.getElementById('audio-toggle').addEventListener('click', () => {
-            setMuted(!gameState.muted);
-        });
 
         // --- LANGUAGE ---
         function initLang() {

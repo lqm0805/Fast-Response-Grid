@@ -1588,16 +1588,51 @@
             document.getElementById('history-modal').style.display = 'flex';
             const hc = document.getElementById('history-content');
             let history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
-            let html = '';
+
+            const modeNames = {
+                'ADVENTURE': '冒险模式',
+                'SURVIVAL': '生存模式',
+                'ENTERTAINMENT': '娱乐混战',
+                'SELECTION_DOUBLE': '自选模式: 双重目标',
+                'SELECTION_SPEED': '自选模式: 极速加倍',
+                'SELECTION_TINY': '自选模式: 微缩方块',
+                'SELECTION_SPIN': '自选模式: 空间扭曲',
+                'SELECTION_ORBIT': '自选模式: 轨道圆环',
+                'SELECTION_MIRROR': '自选模式: 奇妙模式'
+            };
+
+            let globalMaxCombo = 0;
+            let globalMaxComboDate = '';
+            let globalMaxComboMode = '';
+
             for (let k in history) {
                 let d = history[k];
+                if (d.maxCombo > globalMaxCombo) {
+                    globalMaxCombo = d.maxCombo;
+                    globalMaxComboDate = d.comboDate;
+                    globalMaxComboMode = modeNames[k] || k;
+                }
+            }
+
+            let html = '';
+
+            if (globalMaxCombo > 0) {
+                html += `<div style="margin-bottom: 15px; padding: 12px; border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; background: rgba(255, 215, 0, 0.05); text-align: center;">
+                            <strong style="color: var(--warning-color); font-size: 1.1rem; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);">🌟 全局最高连击 🌟</strong><br>
+                            <span style="font-size: 2rem; font-weight: 900; color: var(--primary-color); text-shadow: 0 0 15px rgba(0,243,255,0.6);">${globalMaxCombo}</span><br>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">(${globalMaxComboMode} - ${globalMaxComboDate})</span>
+                          </div>`;
+            }
+
+            for (let k in history) {
+                let d = history[k];
+                let name = modeNames[k] || k;
                 html += `<div style="margin-bottom: 10px; padding: 12px; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 8px; background: rgba(0, 243, 255, 0.03);">
-                            <strong style="color: #00f3ff;">${k}</strong><br>
-                            最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
-                            最高连击: ${d.maxCombo} (${d.comboDate || 'N/A'})
+                            <strong style="color: #00f3ff;">${name}</strong><br>
+                            最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})
                          </div>`;
             }
-            if (html === '') html = '暂无历史记录';
+            if (Object.keys(history).length === 0) html = '暂无历史记录';
             hc.innerHTML = html;
         }
 

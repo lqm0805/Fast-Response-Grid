@@ -474,6 +474,8 @@
             z-index: 150;
         }
 
+        /* v1.2.0 Changes */
+
         .menu-title {
             font-size: clamp(2.5rem, 12vw, 4.5rem);
             font-weight: 900;
@@ -803,7 +805,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.1.0</div>
+    <div class="version-tag">v1.2.0</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -847,8 +849,8 @@
             <div class="glass-card">
                 <div class="menu-title" id="menu-title">极速反应</div>
                 <div class="btn-group">
-                    <button class="neon-button" id="btn-adventure" onclick="startGame('ADVENTURE')">
-                        <span class="btn-icon">🌌</span> <span id="txt-adv">冒险模式</span>
+                    <button class="neon-button" id="btn-adventure" onclick="startGame('CLASSIC')">
+                        <span class="btn-icon">🌌</span> <span id="txt-adv">经典模式</span>
                     </button>
                     <button class="neon-button" id="btn-survival" onclick="startGame('SURVIVAL')">
                         <span class="btn-icon">⚡</span> <span id="txt-surv">生存模式</span>
@@ -945,7 +947,7 @@
         const I18N = {
             CN: {
                 title: '极速反应',
-                adventure: '冒险模式',
+                adventure: '经典模式',
                 survival: '生存模式',
                 entertainment: '娱乐混战',
                 best: '最佳反应',
@@ -1462,11 +1464,8 @@
                     if (idx === expectedIdx) {
                         gameState.mirrorConsecutive = (gameState.mirrorConsecutive || 0) + 1;
                         if (gameState.mirrorConsecutive % 10 === 0) {
-                            gameState.time = Math.min(60, gameState.time + 5);
-                            showBadge('+5s BONUS!');
-                        } else {
-                            gameState.time = Math.min(60, gameState.time + 1);
-                            showBadge('+1s');
+                            gameState.time = Math.min(60, gameState.time + 2);
+                            showBadge('+2s BONUS!');
                         }
                         const rt = Math.round(performance.now() - gameState.startTime);
                         gameState.mirrorTarget = -1;
@@ -1549,12 +1548,7 @@
 
             updateUI();
 
-            // Time Reward (Cap at 60s)
-            if (gameState.active && gameState.chaosEvent !== 'MIRROR') {
-                if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT' || gameState.mode === 'SELECTION') {
-                    gameState.time = Math.min(60, gameState.time + 1);
-                }
-            }
+            // No standard time rewards in v1.2.0 (except Mirror mode handled above)
 
             // Spin re-tilt on each hit
             if (gameState.chaosEvent === 'SPIN') {
@@ -1633,14 +1627,14 @@
 
             if (gameState.active) {
                 const t = I18N[gameState.lang];
-                let label = gameState.mode === 'ADVENTURE' ? t.adventure :
+                let label = gameState.mode === 'CLASSIC' ? t.adventure :
                     gameState.mode === 'SURVIVAL' ? t.survival :
                         gameState.mode === 'SELECTION' ? t.selection : t.entertainment;
                 document.getElementById('mode-label').textContent = label;
             }
 
-            if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT' || gameState.mode === 'SELECTION') {
-                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : (gameState.mode === 'SELECTION' ? 30 : 120);
+            if (gameState.mode === 'CLASSIC' || gameState.mode === 'ENTERTAINMENT' || gameState.mode === 'SELECTION') {
+                const maxTime = gameState.mode === 'CLASSIC' ? 60 : (gameState.mode === 'SELECTION' ? 30 : 120);
                 const fill = Math.max(0, (gameState.time / maxTime) * 100);
                 document.getElementById('status-fill').style.width = fill + '%';
             }

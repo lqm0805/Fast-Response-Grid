@@ -112,7 +112,7 @@
             padding-top: env(safe-area-inset-top);
         }
 
-        /* 赛博动态背景光晕 */
+        /* 赛博动态背景光晕 + 透视网格 */
         .cyber-bg {
             position: fixed;
             top: 0;
@@ -121,14 +121,31 @@
             height: 100%;
             z-index: -1;
             overflow: hidden;
-            background: #05050a;
+            background: radial-gradient(circle at center, #1a0a2e 0%, #05050a 100%);
+            perspective: 1000px;
+        }
+
+        .cyber-bg::after {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image:
+                linear-gradient(rgba(189, 0, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 60px 60px;
+            transform: rotateX(60deg) translateY(-20%);
+            mask-image: linear-gradient(to top, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 80%);
+            z-index: -1;
         }
 
         .cyber-glow-1 {
             position: absolute;
             width: 80vmax;
             height: 80vmax;
-            background: radial-gradient(circle, rgba(0, 243, 255, 0.08) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(0, 243, 255, 0.12) 0%, transparent 65%);
             top: -20%;
             left: -20%;
             animation: glow-move-1 25s ease-in-out infinite alternate;
@@ -138,7 +155,7 @@
             position: absolute;
             width: 70vmax;
             height: 70vmax;
-            background: radial-gradient(circle, rgba(189, 0, 255, 0.08) 0%, transparent 65%);
+            background: radial-gradient(circle, rgba(189, 0, 255, 0.12) 0%, transparent 65%);
             bottom: -15%;
             right: -15%;
             animation: glow-move-2 30s ease-in-out infinite alternate-reverse;
@@ -236,15 +253,17 @@
         }
 
         #mode-label {
-            font-size: 0.75rem;
-            letter-spacing: 3px;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            padding: 3px 12px;
-            border-radius: var(--border-radius-sm);
-            background: rgba(0, 243, 255, 0.08);
-            text-shadow: 0 0 8px rgba(0, 243, 255, var(--glow-intensity-low));
+            border: 2px solid var(--primary-color);
+            padding: 4px 14px;
+            border-radius: 6px;
+            background: rgba(0, 243, 255, 0.1);
+            text-shadow: 0 0 10px var(--primary-color);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            font-weight: 800;
         }
 
         #game-stats {
@@ -262,15 +281,17 @@
 
         /* ===== 模块4：分数与发光文字 ===== */
         #score-main {
-            font-size: 5rem;
+            font-size: clamp(6rem, 25vw, 9rem);
             font-weight: 900;
-            color: var(--primary-color);
+            color: #fff;
             text-shadow:
-                0 0 10px rgba(0, 243, 255, 0.8),
-                0 0 30px rgba(0, 243, 255, 0.6),
-                0 0 80px rgba(0, 243, 255, 0.4);
-            font-family: 'Inter', monospace;
+                0 0 10px var(--primary-color),
+                0 0 20px var(--primary-color),
+                0 0 40px var(--primary-color),
+                0 0 80px rgba(0, 243, 255, 0.5);
+            font-family: 'Outfit', sans-serif;
             margin-bottom: 5px;
+            line-height: 1;
         }
 
         .glow-text {
@@ -280,33 +301,38 @@
 
         #meta-stats {
             display: flex;
-            gap: 20px;
-            font-family: 'Inter', monospace;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            background: var(--glass-bg);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: var(--border-radius-md);
-            padding: 6px 18px;
-            margin-top: 4px;
+            gap: 25px;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #fff;
+            background: rgba(15, 15, 25, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50px;
+            padding: 8px 30px;
+            margin-top: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
         }
 
         #status-bar {
             width: 100%;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.08);
-            margin: 8px 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 20px 0 10px;
             position: relative;
-            overflow: hidden;
-            border-radius: 2px;
+            overflow: visible;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
         }
 
         #status-fill {
             height: 100%;
             width: 100%;
             background: var(--primary-color);
-            box-shadow: 0 0 8px var(--primary-color);
-            transition: width 0.1s linear, background-color var(--transition-slow);
+            box-shadow:
+                0 0 15px var(--primary-color),
+                0 0 30px var(--primary-color);
+            transition: width 0.1s linear;
         }
 
         #lives-container {

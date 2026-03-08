@@ -415,8 +415,8 @@
         <div id="game-stats">
             <div id="score-main">0</div>
             <div id="meta-stats">
-                <div>BEST: <span id="best-val">--</span>ms</div>
-                <div>COMBO: <span id="combo-val">0</span></div>
+                <div>最佳: <span id="best-val">--</span>ms</div>
+                <div>连击: <span id="combo-val">0</span></div>
             </div>
             <div id="status-bar">
                 <div id="status-fill"></div>
@@ -478,12 +478,12 @@
 
         <div id="history-modal" class="modal-overlay">
             <div class="shadcn-card" style="max-height: 80vh; overflow-y: auto;">
-                <div class="menu-title" id="history-title" style="margin-bottom: 10px;">HISTORY</div>
+                <div class="menu-title" id="history-title" style="margin-bottom: 10px;">历史记录</div>
                 <div id="history-content"
                     style="width: 100%; text-align: left; font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
                     <!-- Content injected via JS -->
                 </div>
-                <button onclick="hideHistory()" id="btn-close-history" style="width: 100%;">CLOSE</button>
+                <button onclick="hideHistory()" id="btn-close-history" style="width: 100%;">返回</button>
             </div>
         </div>
     </div>
@@ -1375,11 +1375,11 @@
                 let d = history[k];
                 html += `<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
                             <strong>${k}</strong><br>
-                            High Score: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
-                            Max Combo: ${d.maxCombo} (${d.comboDate || 'N/A'})
+                            最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
+                            最高连击: ${d.maxCombo} (${d.comboDate || 'N/A'})
                          </div>`;
             }
-            if (html === '') html = 'No history yet.';
+            if (html === '') html = '暂无历史记录';
             hc.innerHTML = html;
         }
 

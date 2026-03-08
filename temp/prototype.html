@@ -4,24 +4,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>极速反应网格 - Shadcn 重构版</title>
+    <title>极速反应网格 - 赛博朋克版</title>
     <style>
+        /* ============================================================
+           赛博朋克主题 CSS 变量系统
+           未来切换主题只需修改 :root 中的变量即可
+           ============================================================ */
         :root {
-            --bg-color: #f8f9fa;
-            --grid-color: #e2e8f0;
-            --active-color: #0f172a;
-            --text-color: #0f172a;
-            --accent-color: #334155;
-            --error-color: #ef4444;
-            --score-color: #0f172a;
-            --stage-color: #334155;
-            --overlay-bg: rgba(255, 255, 255, 0.7);
-            --btn-bg: #ffffff;
-            --btn-border: #e2e8f0;
-            --card-border: #e2e8f0;
-            --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            /* ===== 主题色系 ===== */
+            --primary-color: #00f3ff;
+            /* 赛博蓝 */
+            --secondary-color: #bd00ff;
+            /* 霓虹紫 */
+            --success-color: #00ff88;
+            /* 荧光绿 */
+            --error-color: #ff3366;
+            /* 霓虹红 */
+            --warning-color: #ffd700;
+            /* 金色 */
+            --text-color: #e0e0e0;
+            /* 主文字色 */
+            --text-muted: rgba(224, 224, 224, 0.6);
+
+            /* ===== 背景色系 ===== */
+            --bg-color-start: #0a0a12;
+            --bg-color-mid: #1a0a2e;
+            --bg-color-end: #0a1a2e;
+
+            /* ===== 玻璃态系统 ===== */
+            --glass-bg: rgba(15, 15, 25, 0.88);
+            --glass-border: rgba(0, 243, 255, 0.3);
+            --glass-blur: 20px;
+            --glass-shadow: 0 0 30px rgba(0, 243, 255, 0.1), 0 0 60px rgba(189, 0, 255, 0.05);
+
+            /* ===== 发光强度 ===== */
+            --glow-intensity-low: 0.3;
+            --glow-intensity-mid: 0.5;
+            --glow-intensity-high: 0.8;
+
+            /* ===== 动画时长 ===== */
+            --transition-fast: 0.15s;
+            --transition-normal: 0.3s;
+            --transition-slow: 0.5s;
+
+            /* ===== 尺寸 ===== */
+            --border-radius-sm: 6px;
+            --border-radius-md: 10px;
+            --border-radius-lg: 14px;
+            --border-radius-xl: 20px;
+
+            /* ===== 兼容旧变量（Canvas JS 使用） ===== */
+            --stage-color: var(--primary-color);
+            --score-color: var(--primary-color);
         }
 
+        /* ===== 快速主题切换示例 =====
+         * 方案2：日落橙色主题（取消注释即可切换）
+         *
+         * :root {
+         *   --primary-color: #ff6b35;
+         *   --secondary-color: #f7931e;
+         *   --success-color: #ffd700;
+         *   --error-color: #ff4444;
+         *   --bg-color-start: #1a0a0a;
+         *   --bg-color-mid: #2d1810;
+         *   --bg-color-end: #1a0a0a;
+         *   --glass-border: rgba(255, 107, 53, 0.3);
+         * }
+         *
+         * 方案3：清新蓝色主题
+         *
+         * :root {
+         *   --primary-color: #4a90e2;
+         *   --secondary-color: #50e3c2;
+         *   --success-color: #7ed321;
+         *   --error-color: #e04f5f;
+         *   --bg-color-start: #0a1628;
+         *   --bg-color-mid: #0d2137;
+         *   --bg-color-end: #0a1628;
+         *   --glass-border: rgba(74, 144, 226, 0.3);
+         * }
+         */
+
+        /* ===== 模块1：全局重置 ===== */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -30,8 +95,11 @@
             -webkit-tap-highlight-color: transparent;
         }
 
+        /* ===== 模块2：动态背景 ===== */
         body {
-            background-color: var(--bg-color);
+            background: linear-gradient(135deg, var(--bg-color-start), var(--bg-color-mid), var(--bg-color-end));
+            background-size: 400% 400%;
+            animation: bg-shift 20s ease infinite;
             color: var(--text-color);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
@@ -40,17 +108,64 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
-            transition: background-color 0.15s ease, transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform var(--transition-slow) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(0, 243, 255, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(189, 0, 255, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(0, 255, 136, 0.03) 0%, transparent 40%);
+            animation: float-particles 15s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: 0;
         }
 
         body.error-flash {
-            background-color: #fca5a5;
+            background: radial-gradient(circle at center, rgba(255, 51, 102, 0.25), var(--bg-color-start));
         }
 
+        @keyframes bg-shift {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        @keyframes float-particles {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.7;
+            }
+
+            50% {
+                transform: translate(-15px, 10px) scale(1.1);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(10px, -15px) scale(0.95);
+                opacity: 0.8;
+            }
+        }
+
+        /* ===== 模块3：HUD 系统 ===== */
         #hud {
             position: absolute;
-            top: 20px;
-            width: 90%;
+            top: 15px;
+            width: 92%;
             max-width: 500px;
             display: flex;
             flex-direction: column;
@@ -63,17 +178,19 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         #mode-label {
-            font-size: 0.7rem;
-            letter-spacing: 2px;
+            font-size: 0.75rem;
+            letter-spacing: 3px;
             text-transform: uppercase;
-            color: var(--stage-color);
-            border: 1px solid var(--stage-color);
-            padding: 2px 8px;
-            border-radius: 4px;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 3px 12px;
+            border-radius: var(--border-radius-sm);
+            background: rgba(0, 243, 255, 0.08);
+            text-shadow: 0 0 8px rgba(0, 243, 255, var(--glow-intensity-low));
         }
 
         #game-stats {
@@ -83,25 +200,41 @@
             align-items: center;
         }
 
+        /* ===== 模块4：分数与发光文字 ===== */
         #score-main {
-            font-size: 2.5rem;
+            font-size: 4.5rem;
             font-weight: 900;
-            color: var(--score-color);
+            color: var(--primary-color);
+            text-shadow:
+                0 0 10px rgba(0, 243, 255, var(--glow-intensity-low)),
+                0 0 30px rgba(0, 243, 255, var(--glow-intensity-mid)),
+                0 0 60px rgba(0, 243, 255, var(--glow-intensity-low));
+            font-family: 'Inter', monospace;
+        }
+
+        .glow-text {
+            color: var(--primary-color);
+            text-shadow: 0 0 15px rgba(0, 243, 255, var(--glow-intensity-mid));
         }
 
         #meta-stats {
             display: flex;
             gap: 20px;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Inter', monospace;
             font-size: 0.8rem;
-            opacity: 0.8;
+            color: var(--text-muted);
+            background: var(--glass-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--border-radius-md);
+            padding: 6px 18px;
+            margin-top: 4px;
         }
 
         #status-bar {
             width: 100%;
             height: 4px;
-            background: #e2e8f0;
-            margin: 10px 0;
+            background: rgba(255, 255, 255, 0.08);
+            margin: 8px 0;
             position: relative;
             overflow: hidden;
             border-radius: 2px;
@@ -110,8 +243,9 @@
         #status-fill {
             height: 100%;
             width: 100%;
-            background: var(--stage-color);
-            transition: width 0.1s linear, background-color 0.5s;
+            background: var(--primary-color);
+            box-shadow: 0 0 8px var(--primary-color);
+            transition: width 0.1s linear, background-color var(--transition-slow);
         }
 
         #lives-container {
@@ -122,7 +256,8 @@
         .heart {
             color: var(--error-color);
             font-size: 1.2rem;
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transition: transform var(--transition-normal) cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: drop-shadow(0 0 4px var(--error-color));
         }
 
         .heart.lost {
@@ -130,6 +265,7 @@
             opacity: 0;
         }
 
+        /* ===== 模块5：游戏视口与 Canvas ===== */
         #game-view {
             position: relative;
             width: 90vmin;
@@ -150,9 +286,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--overlay-bg);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(10, 10, 18, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -160,16 +296,19 @@
             transition: opacity 0.4s;
         }
 
-        .shadcn-card {
-            background-color: white;
-            border: 1px solid var(--card-border);
-            border-radius: 12px;
-            box-shadow: var(--card-shadow);
-            padding: 3rem 2rem;
+        /* ===== 模块6：玻璃态卡片 ===== */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--glass-shadow);
+            padding: 2.5rem 2rem;
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 400px;
+            max-width: 380px;
             width: 90%;
             z-index: 200;
         }
@@ -180,9 +319,9 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--overlay-bg);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(10, 10, 18, 0.8);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             display: none;
             align-items: center;
             justify-content: center;
@@ -190,81 +329,109 @@
         }
 
         .menu-title {
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 900;
-            margin-bottom: 30px;
-            letter-spacing: 5px;
-            color: var(--text-color);
+            margin-bottom: 28px;
+            letter-spacing: 6px;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 12px rgba(0, 243, 255, var(--glow-intensity-mid)));
         }
 
+        /* ===== 模块7：霓虹按钮系统 ===== */
         .btn-group {
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            width: 240px;
+            gap: 12px;
+            width: 260px;
         }
 
         button {
-            background: var(--btn-bg);
-            border: 1px solid var(--btn-border);
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-color);
-            padding: 12px 16px;
+            padding: 14px 18px;
             font-size: 0.9rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease-in-out;
-            border-radius: 8px;
+            transition: all var(--transition-normal) ease;
+            border-radius: var(--border-radius-md);
             position: relative;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
-            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
         }
 
         button:hover {
-            background: #f1f5f9;
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
-        button.primary {
-            background: var(--text-color);
-            border-color: var(--text-color);
-            color: white;
+        .neon-button {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid var(--primary-color);
+            color: var(--text-color);
+            box-shadow: 0 0 8px rgba(0, 243, 255, var(--glow-intensity-low)),
+                inset 0 0 8px rgba(0, 243, 255, 0.05);
         }
 
-        button.primary:hover {
-            background: #1e293b;
+        .neon-button:hover {
+            background: rgba(0, 243, 255, 0.12);
+            box-shadow: 0 0 15px rgba(0, 243, 255, var(--glow-intensity-mid)),
+                inset 0 0 15px rgba(0, 243, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .neon-button:active {
+            transform: translateY(0);
+        }
+
+        .btn-selection {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(200, 200, 200, 0.5);
+            color: #1a1a2e;
+        }
+
+        .btn-selection:hover {
+            background: #ffffff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
         }
 
         .sel-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 10px;
             width: 100%;
-            margin-top: 15px;
+            margin-top: 12px;
         }
 
         .sel-btn {
-            padding: 12px 10px;
+            padding: 14px 10px;
             font-size: 0.85rem;
             text-align: center;
         }
 
         .back-btn {
-            margin-top: 20px;
+            margin-top: 18px;
             font-size: 0.85rem !important;
-            opacity: 0.8;
+            opacity: 0.7;
             border: none !important;
-            text-decoration: underline;
+            text-decoration: none;
             background: none !important;
-            color: var(--text-color);
+            color: var(--primary-color);
             cursor: pointer;
             box-shadow: none !important;
+            text-shadow: 0 0 8px rgba(0, 243, 255, var(--glow-intensity-low));
         }
 
         .back-btn:hover {
             background: none !important;
             opacity: 1;
+            text-shadow: 0 0 12px rgba(0, 243, 255, var(--glow-intensity-mid));
         }
 
         #sel-menu {
@@ -275,9 +442,30 @@
 
         .btn-icon {
             font-size: 1.2rem;
-            filter: grayscale(100%);
         }
 
+        .icon-btn {
+            padding: 4px;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-color);
+            transition: all var(--transition-normal);
+        }
+
+        .icon-btn:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 10px rgba(0, 243, 255, var(--glow-intensity-low));
+            transform: scale(1.1);
+        }
+
+        /* ===== 模块8：动画系统 ===== */
         #countdown {
             position: absolute;
             top: 50%;
@@ -285,7 +473,10 @@
             transform: translate(-50%, -50%);
             font-size: 10rem;
             font-weight: 900;
-            color: var(--text-color);
+            color: var(--primary-color);
+            text-shadow:
+                0 0 20px rgba(0, 243, 255, var(--glow-intensity-mid)),
+                0 0 60px rgba(0, 243, 255, var(--glow-intensity-low));
             z-index: 150;
             pointer-events: none;
             display: none;
@@ -305,6 +496,7 @@
             font-weight: 900;
             font-style: italic;
             text-transform: uppercase;
+            text-shadow: 0 0 15px currentColor;
             animation: badgePop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
@@ -335,42 +527,15 @@
             font-size: 1.5rem;
             font-weight: bold;
             pointer-events: none;
-            transition: opacity 0.3s;
-        }
-
-        .stats-footer {
-            margin-top: 30px;
-            font-size: 0.7rem;
-            opacity: 0.5;
-            text-align: center;
-            line-height: 1.6;
-        }
-
-        .icon-btn {
-            padding: 4px;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            border: 1px solid var(--btn-border);
-            background: var(--btn-bg);
-            color: var(--text-color);
-            transition: all 0.2s;
-        }
-
-        .icon-btn:hover {
-            border-color: var(--active-color);
-            transform: scale(1.1);
+            transition: opacity var(--transition-normal);
+            text-shadow: 0 0 10px currentColor;
         }
 
         .shake {
-            animation: shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
+            animation: error-shake 0.4s cubic-bezier(.36, .07, .19, .97) both;
         }
 
-        @keyframes shake {
+        @keyframes error-shake {
 
             10%,
             90% {
@@ -392,6 +557,58 @@
             60% {
                 transform: translate3d(6px, 0, 0);
             }
+        }
+
+        @keyframes neon-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes glow-breathe {
+
+            0%,
+            100% {
+                box-shadow: 0 0 8px rgba(0, 243, 255, 0.3);
+            }
+
+            50% {
+                box-shadow: 0 0 20px rgba(0, 243, 255, 0.6), 0 0 40px rgba(0, 243, 255, 0.2);
+            }
+        }
+
+        .combo-fire {
+            animation: combo-pulse 0.3s ease-out;
+            color: var(--warning-color) !important;
+            text-shadow: 0 0 10px var(--warning-color), 0 0 20px var(--warning-color);
+        }
+
+        @keyframes combo-pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.4);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .stats-footer {
+            margin-top: 30px;
+            font-size: 0.7rem;
+            opacity: 0.5;
+            text-align: center;
+            line-height: 1.6;
         }
     </style>
 </head>
@@ -431,59 +648,59 @@
         <div id="feedback"></div>
 
         <div id="overlay">
-            <div class="shadcn-card">
-                <div class="menu-title" id="menu-title">GRID SPEED</div>
+            <div class="glass-card">
+                <div class="menu-title" id="menu-title">极速反应</div>
                 <div class="btn-group">
-                    <button class="primary" id="btn-adventure" onclick="startGame('ADVENTURE')">
-                        <span class="btn-icon">🌌</span> <span id="txt-adv">ADVENTURE</span>
+                    <button class="neon-button" id="btn-adventure" onclick="startGame('ADVENTURE')">
+                        <span class="btn-icon">🌌</span> <span id="txt-adv">冒险模式</span>
                     </button>
-                    <button class="primary" id="btn-survival" onclick="startGame('SURVIVAL')">
-                        <span class="btn-icon">⚡</span> <span id="txt-surv">SURVIVAL</span>
+                    <button class="neon-button" id="btn-survival" onclick="startGame('SURVIVAL')">
+                        <span class="btn-icon">⚡</span> <span id="txt-surv">生存模式</span>
                     </button>
-                    <button class="primary" id="btn-entertainment" onclick="startGame('ENTERTAINMENT')">
-                        <span class="btn-icon">🎭</span> <span id="txt-ent">ENTERTAINMENT</span>
+                    <button class="neon-button" id="btn-entertainment" onclick="startGame('ENTERTAINMENT')">
+                        <span class="btn-icon">🎭</span> <span id="txt-ent">娱乐混战</span>
                     </button>
-                    <button id="btn-selection-open" onclick="showSelMenu()">
-                        <span class="btn-icon">⚙️</span> <span id="txt-sel">SELECTION MODE</span>
+                    <button class="btn-selection" id="btn-selection-open" onclick="showSelMenu()">
+                        <span class="btn-icon">⚙️</span> <span id="txt-sel">自选模式</span>
                     </button>
                 </div>
                 <div id="sel-menu">
                     <div class="sel-grid">
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'DOUBLE')">DOUBLE
-                            VISION</button>
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPEED')">HYPER SPEED</button>
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'TINY')">TINY SHAPES</button>
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'SPIN')">GRID SPIN</button>
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'ORBIT')">ORBIT RING</button>
-                        <button class="sel-btn primary" onclick="startGame('SELECTION', 'MIRROR')">MIRROR</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'DOUBLE')">双重目标</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'SPEED')">极速加倍</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'TINY')">微缩方块</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'SPIN')">空间扭曲</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'ORBIT')">轨道圆环</button>
+                        <button class="sel-btn neon-button" onclick="startGame('SELECTION', 'MIRROR')">奇妙模式</button>
                     </div>
-                    <button class="back-btn" onclick="hideSelMenu()" id="btn-back">BACK</button>
+                    <button class="back-btn" onclick="hideSelMenu()" id="btn-back">返回</button>
                 </div>
-                <button class="back-btn" id="btn-history" onclick="showHistory()">HISTORY / 历史记录</button>
+                <button class="back-btn glow-text" id="btn-history" onclick="showHistory()">历史记录</button>
             </div>
         </div>
 
         <div id="game-over-modal" class="modal-overlay">
-            <div class="shadcn-card">
-                <div class="menu-title" id="go-title">GAME OVER</div>
+            <div class="glass-card">
+                <div class="menu-title" id="go-title">游戏结束</div>
                 <div id="go-score"
-                    style="font-size: 3rem; font-weight: 900; margin-bottom: 20px; color: var(--score-color);">0</div>
+                    style="font-size: 3rem; font-weight: 900; margin-bottom: 20px; color: var(--primary-color); text-shadow: 0 0 20px rgba(0,243,255,0.5);">
+                    0</div>
                 <div style="display: flex; gap: 10px; width: 100%;">
-                    <button class="primary" style="flex: 1;" onclick="playAgain()" id="btn-play-again">PLAY
-                        AGAIN</button>
-                    <button style="flex: 1;" onclick="goToMenu()" id="btn-go-home">HOME</button>
+                    <button class="neon-button" style="flex: 1;" onclick="playAgain()" id="btn-play-again">再来一局</button>
+                    <button style="flex: 1;" onclick="goToMenu()" id="btn-go-home">回到主页</button>
                 </div>
             </div>
         </div>
 
         <div id="history-modal" class="modal-overlay">
-            <div class="shadcn-card" style="max-height: 80vh; overflow-y: auto;">
+            <div class="glass-card" style="max-height: 80vh; overflow-y: auto;">
                 <div class="menu-title" id="history-title" style="margin-bottom: 10px;">历史记录</div>
                 <div id="history-content"
-                    style="width: 100%; text-align: left; font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px;">
+                    style="width: 100%; text-align: left; font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px; color: var(--text-muted);">
                     <!-- Content injected via JS -->
                 </div>
-                <button onclick="hideHistory()" id="btn-close-history" style="width: 100%;">返回</button>
+                <button class="neon-button" onclick="hideHistory()" id="btn-close-history"
+                    style="width: 100%;">返回</button>
             </div>
         </div>
     </div>
@@ -627,7 +844,7 @@
 
         function drawSprites(i, x, y, size, gap, isActive) {
             const themeColor = THEMES[gameState.stage].color;
-            ctx.fillStyle = isActive ? themeColor : '#222';
+            ctx.fillStyle = isActive ? themeColor : 'rgba(255, 255, 255, 0.03)';
 
             if (isActive) {
                 ctx.shadowBlur = 15; ctx.shadowColor = themeColor;
@@ -702,7 +919,7 @@
                 const y = Math.floor(i / gameState.gridSize) * cellSize;
                 const gap = 6;
 
-                ctx.strokeStyle = '#222';
+                ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x + gap, y + gap, cellSize - gap * 2, cellSize - gap * 2);
 
@@ -754,7 +971,7 @@
             const innerR = size * 0.25;
 
             // Track
-            ctx.strokeStyle = '#222';
+            ctx.strokeStyle = 'rgba(0, 243, 255, 0.2)';
             ctx.lineWidth = 2;
             ctx.beginPath(); ctx.arc(cx, cy, outerR, 0, Math.PI * 2); ctx.stroke();
             ctx.beginPath(); ctx.arc(cx, cy, innerR, 0, Math.PI * 2); ctx.stroke();
@@ -1374,8 +1591,8 @@
             let html = '';
             for (let k in history) {
                 let d = history[k];
-                html += `<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                            <strong>${k}</strong><br>
+                html += `<div style="margin-bottom: 10px; padding: 12px; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 8px; background: rgba(0, 243, 255, 0.03);">
+                            <strong style="color: #00f3ff;">${k}</strong><br>
                             最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
                             最高连击: ${d.maxCombo} (${d.comboDate || 'N/A'})
                          </div>`;

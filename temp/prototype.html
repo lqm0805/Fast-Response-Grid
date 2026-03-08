@@ -403,7 +403,7 @@
                 <button id="btn-quit" class="icon-btn"
                     style="display: none; font-size: 1.5rem; width: 44px; height: 44px; margin-right: 15px;"
                     onclick="quitGame()">🔙</button>
-                <div id="mode-label" style="font-size: 1.2rem;">STANDBY</div>
+                <div id="mode-label" style="display: none;"></div>
             </div>
             <div id="lives-container" style="display: none;">
                 <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
@@ -536,7 +536,6 @@
                 combo: '连击',
                 hiscore: '最高分',
                 gameover: '游戏结束',
-                standby: '准备',
                 result: '最终得分',
                 event_double: '双重目标!!',
                 event_speed: '极速加倍!!',
@@ -1244,6 +1243,7 @@
                 mode === 'SURVIVAL' ? t.survival :
                     mode === 'SELECTION' ? t.selection : t.entertainment;
             document.getElementById('mode-label').textContent = label;
+            document.getElementById('mode-label').style.display = 'block';
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
             document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
@@ -1307,6 +1307,7 @@
             document.getElementById('btn-play-again').textContent = '再来一局';
             document.getElementById('btn-go-home').textContent = '回到主页';
             document.getElementById('mode-label').textContent = t.gameover;
+            document.getElementById('mode-label').style.display = 'block';
         }
 
         function playAgain() {
@@ -1343,7 +1344,7 @@
 
             const t = I18N.CN;
             document.getElementById('menu-title').textContent = t.title;
-            document.getElementById('mode-label').textContent = t.standby;
+            document.getElementById('mode-label').style.display = 'none';
         }
 
         function saveStats() {
@@ -1441,11 +1442,6 @@
             if (metaStats.length >= 2) {
                 metaStats[0].innerHTML = `${t.best}: <span id="best-val">${gameState.bestReaction === Infinity ? '--' : gameState.bestReaction}</span>ms`;
                 metaStats[1].innerHTML = `${t.combo}: <span id="combo-val">${gameState.combo}</span>`;
-            }
-
-            if (!gameState.active) {
-                const modeLabel = document.getElementById('mode-label');
-                if (modeLabel) modeLabel.textContent = t.standby;
             }
         }
 

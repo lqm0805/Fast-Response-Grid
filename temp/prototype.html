@@ -194,10 +194,13 @@
         }
 
         #game-stats {
-            display: none;
+            display: flex;
             width: 100%;
             flex-direction: column;
             align-items: center;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
 
         /* ===== 模块4：分数与发光文字 ===== */
@@ -330,10 +333,10 @@
         }
 
         .menu-title {
-            font-size: clamp(2rem, 8vw, 3.5rem);
+            font-size: clamp(2.2rem, 10vw, 3.5rem);
             font-weight: 900;
-            margin-bottom: 40px;
-            letter-spacing: clamp(4px, 2vw, 12px);
+            margin-bottom: 32px;
+            letter-spacing: clamp(6px, 3vw, 12px);
             white-space: nowrap;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
@@ -346,16 +349,16 @@
         .btn-group {
             display: flex;
             flex-direction: column;
-            gap: 18px;
-            width: 320px;
+            gap: 14px;
+            width: min(90%, 280px);
         }
 
         button {
             background: transparent;
             border: 1px solid rgba(255, 255, 255, 0.1);
             color: var(--text-color);
-            padding: 20px 24px;
-            font-size: 1.15rem;
+            padding: 15px 18px;
+            font-size: 1.05rem;
             font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-normal) ease;
@@ -364,7 +367,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         button:hover {
@@ -1526,7 +1529,9 @@
             document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
             document.getElementById('btn-quit').style.display = 'flex';
-            document.getElementById('game-stats').style.display = 'flex';
+            const gs = document.getElementById('game-stats');
+            gs.style.visibility = 'visible';
+            gs.style.opacity = '1';
 
             updateLives();
             updateUI();
@@ -1573,7 +1578,9 @@
             if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);
             document.body.style.transform = 'rotate(0deg)';
             document.getElementById('btn-quit').style.display = 'none';
-            document.getElementById('game-stats').style.display = 'none';
+            const gs1 = document.getElementById('game-stats');
+            gs1.style.visibility = 'hidden';
+            gs1.style.opacity = '0';
             saveStats();
             sounds.gameOver();
 
@@ -1610,7 +1617,9 @@
             document.body.style.transform = 'rotate(0deg)';
 
             document.getElementById('btn-quit').style.display = 'none';
-            document.getElementById('game-stats').style.display = 'none';
+            const gs2 = document.getElementById('game-stats');
+            gs2.style.visibility = 'hidden';
+            gs2.style.opacity = '0';
 
             // clear canvas
             const dpr = window.devicePixelRatio || 1;

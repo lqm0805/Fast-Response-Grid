@@ -163,14 +163,14 @@
 
         /* ===== 模块3：HUD 系统 ===== */
         #hud {
-            position: absolute;
-            top: 15px;
+            position: relative;
             width: 92%;
             max-width: 500px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 10;
+            margin-bottom: 15px;
         }
 
         .hud-top {
@@ -269,8 +269,8 @@
         /* ===== 模块5：游戏视口与 Canvas ===== */
         #game-view {
             position: relative;
-            width: 90vmin;
-            height: 90vmin;
+            width: min(92vw, 65vh);
+            height: min(92vw, 65vh);
             max-width: 500px;
             max-height: 500px;
         }
@@ -721,14 +721,17 @@
         </div>
 
         <div id="history-modal" class="modal-overlay">
-            <div class="glass-card" style="max-height: 80vh; overflow-y: auto;">
-                <div class="menu-title" id="history-title" style="margin-bottom: 10px;">历史记录</div>
+            <div class="glass-card"
+                style="max-height: 85vh; overflow-y: auto; padding: 40px 30px; border-radius: 16px; border: 1px solid rgba(0, 243, 255, 0.5); box-shadow: 0 0 40px rgba(0,243,255,0.2), inset 0 0 20px rgba(0,243,255,0.05); background: rgba(15,15,25,0.95);">
+                <div class="menu-title" id="history-title"
+                    style="margin-bottom: 25px; font-size: 2.2rem; letter-spacing: 5px; filter: drop-shadow(0 0 20px rgba(0, 243, 255, 1));">
+                    历史记录</div>
                 <div id="history-content"
-                    style="width: 100%; text-align: left; font-size: 0.85rem; line-height: 1.5; margin-bottom: 20px; color: var(--text-muted);">
+                    style="width: 100%; text-align: left; font-size: 0.95rem; line-height: 1.6; margin-bottom: 25px; color: rgba(224, 224, 224, 0.9);">
                     <!-- Content injected via JS -->
                 </div>
                 <button class="neon-button" onclick="hideHistory()" id="btn-close-history"
-                    style="width: 100%;">返回</button>
+                    style="width: 100%; font-size: 1.1rem; padding: 16px; border-width: 2px;">返回主界面</button>
             </div>
         </div>
     </div>

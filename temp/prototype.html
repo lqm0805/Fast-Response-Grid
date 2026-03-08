@@ -330,10 +330,11 @@
         }
 
         .menu-title {
-            font-size: 3.5rem;
+            font-size: clamp(2rem, 8vw, 3.5rem);
             font-weight: 900;
             margin-bottom: 40px;
-            letter-spacing: 12px;
+            letter-spacing: clamp(4px, 2vw, 12px);
+            white-space: nowrap;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -391,14 +392,17 @@
         }
 
         .btn-selection {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(200, 200, 200, 0.5);
-            color: #1a1a2e;
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px solid var(--primary-color);
+            color: var(--text-color);
+            box-shadow: 0 0 8px rgba(0, 243, 255, var(--glow-intensity-low)),
+                inset 0 0 8px rgba(0, 243, 255, 0.05);
         }
 
         .btn-selection:hover {
-            background: #ffffff;
-            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+            background: rgba(0, 243, 255, 0.12);
+            box-shadow: 0 0 15px rgba(0, 243, 255, var(--glow-intensity-mid)),
+                inset 0 0 15px rgba(0, 243, 255, 0.1);
             transform: translateY(-2px);
         }
 
@@ -1463,21 +1467,9 @@
             document.getElementById('overlay').style.opacity = 0;
             setTimeout(() => document.getElementById('overlay').style.display = 'none', 400);
 
-            // Countdown
-            const cd = document.getElementById('countdown');
-            cd.style.display = 'block';
-            for (let i = 3; i > 0; i--) {
-                cd.textContent = i;
-                sounds.count(440 + (3 - i) * 220);
-                await new Promise(r => setTimeout(r, 700));
-            }
-            cd.textContent = "GO!"; sounds.count(1320);
-            await new Promise(r => setTimeout(r, 400));
-            cd.style.display = 'none';
-
-            // Init State
+            // Init State first so the correct grid renders during countdown
             gameState = {
-                active: true,
+                active: false, // not active yet, just init for rendering
                 mode: mode,
                 score: 0,
                 combo: 0,
@@ -1498,10 +1490,28 @@
                 pendingChaosEnd: false,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
-                orbitActive: fixedType === 'ORBIT',
+                orbitActive: false,
                 orbitAngle: 0,
                 orbitSpeed: 0.05
             };
+
+            // Draw the correct grid layout immediately
+            draw();
+
+            // Countdown
+            const cd = document.getElementById('countdown');
+            cd.style.display = 'block';
+            for (let i = 3; i > 0; i--) {
+                cd.textContent = i;
+                sounds.count(440 + (3 - i) * 220);
+                await new Promise(r => setTimeout(r, 700));
+            }
+            cd.textContent = "GO!"; sounds.count(1320);
+            await new Promise(r => setTimeout(r, 400));
+            cd.style.display = 'none';
+
+            // Now activate game
+            gameState.active = true;
 
             if (fixedType === 'ORBIT') startOrbitEvent();
             if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';

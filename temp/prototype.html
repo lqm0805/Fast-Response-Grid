@@ -1175,10 +1175,13 @@
                 gameState.isWaiting = false;
                 sounds.tick();
 
-                // 5s Expiry (No penalty)
+                // 5s Expiry
                 gameState.expiryTimer = setTimeout(() => {
                     if (gameState.active && !gameState.isWaiting) {
-                        triggerBlock();
+                        if (gameState.mode === 'SURVIVAL') {
+                            handleError();
+                        }
+                        triggerBlock(true);
                     }
                 }, 5000);
             }, delay);
@@ -1278,7 +1281,13 @@
                 const centerY = cellY + cellSize / 2;
                 const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
                 const drawSize = (cellSize - 6 * 2 - 4) * 0.35;
-                if (dist > drawSize / 2) { handleError(); return; }
+                if (dist > drawSize / 2) {
+                    handleError();
+                    gameState.activeIndex = -1;
+                    gameState.chaosTarget2 = -1;
+                    triggerBlock(true);
+                    return;
+                }
             }
 
             if (idx === gameState.activeIndex && gameState.activeIndex !== -1) {
@@ -1293,6 +1302,9 @@
                 handleSuccess(rt, x, y);
             } else {
                 handleError();
+                gameState.activeIndex = -1;
+                gameState.chaosTarget2 = -1;
+                triggerBlock(true);
             }
         }
 

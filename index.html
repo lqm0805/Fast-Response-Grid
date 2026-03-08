@@ -275,7 +275,7 @@
             max-height: 0;
             visibility: hidden;
             opacity: 0;
-            transition: opacity 0.4s ease, max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: opacity 0.4s ease, max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1);
             will-change: max-height, opacity;
         }
 
@@ -358,10 +358,10 @@
         /* ===== 模块5：游戏视口与 Canvas ===== */
         #game-view {
             position: relative;
-            width: min(92vw, 65vh);
-            height: min(92vw, 65vh);
-            max-width: 500px;
-            max-height: 500px;
+            width: 92vw;
+            max-width: 480px;
+            aspect-ratio: 1 / 1;
+            margin: 0 auto;
         }
 
         canvas {
@@ -1652,10 +1652,10 @@
             overlay.style.opacity = 0;
             setTimeout(() => overlay.style.display = 'none', 400);
 
-            // 2. STAGGERED HUD Expansion (Wait 80ms for menu blur to start clearing)
+            // 2. STAGGERED HUD Expansion
             await new Promise(r => setTimeout(r, 80));
             const gs = document.getElementById('game-stats');
-            gs.style.maxHeight = '180px';
+            gs.style.maxHeight = '220px'; // Slightly more breathing room
             gs.style.visibility = 'visible';
             gs.style.opacity = '0.3';
 

@@ -261,12 +261,8 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--primary-color);
-            border: 2px solid var(--primary-color);
-            padding: 4px 14px;
-            border-radius: 6px;
-            background: rgba(0, 243, 255, 0.1);
+            background: transparent;
             text-shadow: 0 0 10px var(--primary-color);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
             font-weight: 800;
         }
 
@@ -845,7 +841,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.5.2</div>
+    <div class="version-tag">v1.5.4</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -1483,8 +1479,6 @@
                         gameState.mirrorTarget = -1;
                         if (gameState.trapTimer) clearTimeout(gameState.trapTimer);
                         gameState.mirrorConsecutive = 0;
-                        gameState.time = Math.max(0, gameState.time - 3);
-                        showBadge('-3s');
                         handleError();
                         triggerBlock(true); // Immediate trigger
                         return;
@@ -1526,8 +1520,6 @@
                         handleSuccess(rt, x, y, true); // Immediate trigger
                     } else {
                         gameState.mirrorConsecutive = 0;
-                        gameState.time = Math.max(0, gameState.time - 3);
-                        showBadge('-3s');
                         gameState.mirrorTarget = -1;
                         handleError();
                         triggerBlock(true); // Immediate trigger

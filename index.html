@@ -27,20 +27,20 @@
             --text-muted: rgba(224, 224, 224, 0.6);
 
             /* ===== 背景色系 ===== */
-            --bg-color-start: #0a0a12;
-            --bg-color-mid: #1a0a2e;
-            --bg-color-end: #0a1a2e;
+            --bg-color-start: #06060c;
+            --bg-color-mid: #0a0514;
+            --bg-color-end: #030a14;
 
             /* ===== 玻璃态系统 ===== */
-            --glass-bg: rgba(15, 15, 25, 0.88);
-            --glass-border: rgba(0, 243, 255, 0.3);
-            --glass-blur: 20px;
-            --glass-shadow: 0 0 30px rgba(0, 243, 255, 0.1), 0 0 60px rgba(189, 0, 255, 0.05);
+            --glass-bg: rgba(5, 5, 10, 0.6);
+            --glass-border: rgba(0, 243, 255, 0.4);
+            --glass-blur: 24px;
+            --glass-shadow: 0 0 40px rgba(0, 243, 255, 0.2), 0 0 80px rgba(189, 0, 255, 0.15), inset 0 0 20px rgba(0, 243, 255, 0.05);
 
             /* ===== 发光强度 ===== */
-            --glow-intensity-low: 0.3;
-            --glow-intensity-mid: 0.5;
-            --glow-intensity-high: 0.8;
+            --glow-intensity-low: 0.5;
+            --glow-intensity-mid: 0.8;
+            --glow-intensity-high: 1.2;
 
             /* ===== 动画时长 ===== */
             --transition-fast: 0.15s;
@@ -202,14 +202,15 @@
 
         /* ===== 模块4：分数与发光文字 ===== */
         #score-main {
-            font-size: 4.5rem;
+            font-size: 5rem;
             font-weight: 900;
             color: var(--primary-color);
             text-shadow:
-                0 0 10px rgba(0, 243, 255, var(--glow-intensity-low)),
-                0 0 30px rgba(0, 243, 255, var(--glow-intensity-mid)),
-                0 0 60px rgba(0, 243, 255, var(--glow-intensity-low));
+                0 0 10px rgba(0, 243, 255, 0.8),
+                0 0 30px rgba(0, 243, 255, 0.6),
+                0 0 80px rgba(0, 243, 255, 0.4);
             font-family: 'Inter', monospace;
+            margin-bottom: 5px;
         }
 
         .glow-text {
@@ -329,15 +330,15 @@
         }
 
         .menu-title {
-            font-size: 2.2rem;
+            font-size: 2.8rem;
             font-weight: 900;
-            margin-bottom: 28px;
-            letter-spacing: 6px;
+            margin-bottom: 30px;
+            letter-spacing: 8px;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: drop-shadow(0 0 12px rgba(0, 243, 255, var(--glow-intensity-mid)));
+            filter: drop-shadow(0 0 20px rgba(0, 243, 255, 0.8)) drop-shadow(0 0 40px rgba(189, 0, 255, 0.6));
         }
 
         /* ===== 模块7：霓虹按钮系统 ===== */
@@ -528,7 +529,34 @@
             font-weight: bold;
             pointer-events: none;
             transition: opacity var(--transition-normal);
-            text-shadow: 0 0 10px currentColor;
+            text-shadow: 0 0 15px currentColor;
+        }
+
+        .score-popup {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.8rem;
+            pointer-events: none;
+            animation: float-up 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            z-index: 200;
+            text-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+        }
+
+        @keyframes float-up {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 0;
+            }
+
+            20% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -100px) scale(1);
+                opacity: 0;
+            }
         }
 
         .shake {
@@ -1175,10 +1203,13 @@
                 gameState.isWaiting = false;
                 sounds.tick();
 
-                // 5s Expiry (No penalty)
+                // 5s Expiry
                 gameState.expiryTimer = setTimeout(() => {
                     if (gameState.active && !gameState.isWaiting) {
-                        triggerBlock();
+                        if (gameState.mode === 'SURVIVAL') {
+                            handleError();
+                        }
+                        triggerBlock(true);
                     }
                 }, 5000);
             }, delay);
@@ -1278,7 +1309,13 @@
                 const centerY = cellY + cellSize / 2;
                 const dist = Math.sqrt((x - centerX) ** 2 + (y - centerY) ** 2);
                 const drawSize = (cellSize - 6 * 2 - 4) * 0.35;
-                if (dist > drawSize / 2) { handleError(); return; }
+                if (dist > drawSize / 2) {
+                    handleError();
+                    gameState.activeIndex = -1;
+                    gameState.chaosTarget2 = -1;
+                    triggerBlock(true);
+                    return;
+                }
             }
 
             if (idx === gameState.activeIndex && gameState.activeIndex !== -1) {
@@ -1293,6 +1330,9 @@
                 handleSuccess(rt, x, y);
             } else {
                 handleError();
+                gameState.activeIndex = -1;
+                gameState.chaosTarget2 = -1;
+                triggerBlock(true);
             }
         }
 
@@ -1314,7 +1354,7 @@
             if (rt < 200) showBadge('⚡ LIGHTNING');
             else if (rt < 250) showBadge('🔥 ELITE');
 
-            showFeedback(`${rt}ms`, rt < 300 ? '#00ffaa' : rt < 500 ? '#ffd700' : '#ff8800');
+            showFeedback(`${rt}ms`, rt < 300 ? '#00ff88' : rt < 500 ? '#ffd700' : '#ff3366', x, y);
 
             // Level Progression (Adventure)
             if (gameState.mode === 'ADVENTURE' && gameState.hitCount % 15 === 0 && gameState.stage < 4) {
@@ -1373,10 +1413,21 @@
             setTimeout(() => b.remove(), 1000);
         }
 
-        function showFeedback(txt, color) {
-            const f = document.getElementById('feedback');
-            f.textContent = txt; f.style.color = color; f.style.opacity = 1;
-            setTimeout(() => f.style.opacity = 0, 800);
+        function showFeedback(txt, color, x, y) {
+            const f = document.createElement('div');
+            f.className = 'score-popup';
+            f.textContent = txt;
+            f.style.color = color;
+            if (x !== undefined && y !== undefined) {
+                f.style.left = x + 'px';
+                f.style.top = y + 'px';
+            } else {
+                f.style.left = '50%';
+                f.style.top = '50%';
+                f.style.transform = 'translate(-50%, -50%)';
+            }
+            document.getElementById('game-view').appendChild(f);
+            setTimeout(() => f.remove(), 600);
         }
 
         function updateUI() {
@@ -1588,16 +1639,51 @@
             document.getElementById('history-modal').style.display = 'flex';
             const hc = document.getElementById('history-content');
             let history = JSON.parse(localStorage.getItem('gameHistory') || '{}');
-            let html = '';
+
+            const modeNames = {
+                'ADVENTURE': '冒险模式',
+                'SURVIVAL': '生存模式',
+                'ENTERTAINMENT': '娱乐混战',
+                'SELECTION_DOUBLE': '自选模式: 双重目标',
+                'SELECTION_SPEED': '自选模式: 极速加倍',
+                'SELECTION_TINY': '自选模式: 微缩方块',
+                'SELECTION_SPIN': '自选模式: 空间扭曲',
+                'SELECTION_ORBIT': '自选模式: 轨道圆环',
+                'SELECTION_MIRROR': '自选模式: 奇妙模式'
+            };
+
+            let globalMaxCombo = 0;
+            let globalMaxComboDate = '';
+            let globalMaxComboMode = '';
+
             for (let k in history) {
                 let d = history[k];
+                if (d.maxCombo > globalMaxCombo) {
+                    globalMaxCombo = d.maxCombo;
+                    globalMaxComboDate = d.comboDate;
+                    globalMaxComboMode = modeNames[k] || k;
+                }
+            }
+
+            let html = '';
+
+            if (globalMaxCombo > 0) {
+                html += `<div style="margin-bottom: 15px; padding: 12px; border: 1px solid rgba(255, 215, 0, 0.3); border-radius: 8px; background: rgba(255, 215, 0, 0.05); text-align: center;">
+                            <strong style="color: var(--warning-color); font-size: 1.1rem; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);">🌟 全局最高连击 🌟</strong><br>
+                            <span style="font-size: 2rem; font-weight: 900; color: var(--primary-color); text-shadow: 0 0 15px rgba(0,243,255,0.6);">${globalMaxCombo}</span><br>
+                            <span style="font-size: 0.8rem; color: var(--text-muted);">(${globalMaxComboMode} - ${globalMaxComboDate})</span>
+                          </div>`;
+            }
+
+            for (let k in history) {
+                let d = history[k];
+                let name = modeNames[k] || k;
                 html += `<div style="margin-bottom: 10px; padding: 12px; border: 1px solid rgba(0, 243, 255, 0.2); border-radius: 8px; background: rgba(0, 243, 255, 0.03);">
-                            <strong style="color: #00f3ff;">${k}</strong><br>
-                            最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})<br>
-                            最高连击: ${d.maxCombo} (${d.comboDate || 'N/A'})
+                            <strong style="color: #00f3ff;">${name}</strong><br>
+                            最高得分: ${d.hiScore} (${d.hiDate || 'N/A'})
                          </div>`;
             }
-            if (html === '') html = '暂无历史记录';
+            if (Object.keys(history).length === 0) html = '暂无历史记录';
             hc.innerHTML = html;
         }
 

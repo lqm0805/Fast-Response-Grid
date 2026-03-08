@@ -845,7 +845,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.5.1</div>
+    <div class="version-tag">v1.5.2</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -1745,6 +1745,8 @@
             gs.style.opacity = '0.3';
 
             // 3. Init State
+            document.getElementById('glass-grid').classList.remove('orbit-hider');
+
             gameState = {
                 active: false,
                 mode: mode,
@@ -1900,6 +1902,7 @@
             hideSelMenu(); // Fix navigation bug
             document.getElementById('countdown').style.display = 'none';
             gameState.orbitActive = false;
+            document.getElementById('glass-grid').classList.remove('orbit-hider');
             gameState.trapIndex = -1;
             gameState.mirrorTarget = -1;
             if (gameState.expiryTimer) clearTimeout(gameState.expiryTimer);

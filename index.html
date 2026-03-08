@@ -395,13 +395,27 @@
             box-shadow: inset 0 0 10px rgba(255, 255, 255, 0.05);
             border-radius: 8px;
             margin: 6px;
-            /* Match the gap in JS draw */
-            transition: border-color 0.3s;
+            transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .tile-active {
+            background: var(--stage-color) !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 30px var(--stage-color), inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
+            opacity: 0.9 !important;
+            transform: scale(0.98);
+        }
+
+        .tile-mirror {
+            background: #00ff88 !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 30px #00ff88, inset 0 0 10px rgba(255, 255, 255, 0.5) !important;
+            opacity: 0.9 !important;
+            transform: scale(0.98);
         }
 
         .orbit-hider .glass-tile {
             display: none;
-            /* Hide grid tiles in Orbit mode */
         }
 
         #overlay {
@@ -780,9 +794,10 @@
         <div class="hud-top">
             <div style="display: flex; align-items: center;">
                 <button id="btn-quit" class="icon-btn"
-                    style="display: none; width: 60px; height: 60px; margin-right: 15px; border: none; background: transparent;"
+                    style="display: none; width: 62px; height: 62px; margin-right: 15px; border: none; background: transparent; padding: 0;"
                     onclick="quitGame()">
-                    <img src="button_return.jpg" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img src="./button_return.jpg"
+                        style="width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.5));">
                 </button>
                 <div id="mode-label" style="display: none;"></div>
             </div>
@@ -1015,10 +1030,7 @@
                 ctx.shadowBlur = 30; ctx.shadowColor = themeColor;
             }
 
-            // Align perfectly with DOM glass tiles (margin: 6px; border-radius: 8px)
-            const drawSize = size - 12; // size - gap * 2
-            const drawX = x + 6;
-            const drawY = y + 6;
+            const drawSize = size - 12;
             const radius = 8;
 
             if (gameState.chaosEvent === 'TINY') {
@@ -1036,20 +1048,9 @@
                 } else if (shape === 'star') {
                     drawStar(centerX, centerY, 5, tinySize / 2, tinySize / 4);
                 }
-            } else {
-                ctx.beginPath();
-                ctx.roundRect(drawX, drawY, drawSize, drawSize, radius);
-                if (isActive) {
-                    ctx.strokeStyle = '#fff';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-                    ctx.globalAlpha = 0.4;
-                    ctx.fill();
-                    ctx.globalAlpha = 1.0;
-                } else {
-                    ctx.fill();
-                }
             }
+            // Normal mode sprites are now handled by DOM classes in draw()
+
             ctx.shadowBlur = 0;
         }
 
@@ -1097,28 +1098,34 @@
                 updateGlassTiles();
             }
 
-            // Grid rendering (Canvas side)
+            // Sync DOM Glass Tiles with Game State (for perfect alignment)
+            const glassTiles = document.querySelectorAll('.glass-tile');
+            glassTiles.forEach((tile, i) => {
+                tile.classList.remove('tile-active', 'tile-mirror');
+
+                // Hide normal highlighting in TINY mode to avoid double-glow
+                if (gameState.chaosEvent !== 'TINY') {
+                    if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
+                        tile.classList.add('tile-active');
+                    }
+                }
+
+                if (gameState.chaosEvent === 'MIRROR' && i === gameState.mirrorTarget) {
+                    tile.classList.add('tile-mirror');
+                }
+            });
+
+            // Grid rendering (Canvas side - for TINY objects and overlays)
             for (let i = 0; i < gameState.gridSize * gameState.gridSize; i++) {
                 const x = (i % gameState.gridSize) * cellSize;
                 const y = Math.floor(i / gameState.gridSize) * cellSize;
                 const gap = 6;
 
-                // We no longer draw the base square on canvas (it's DOM now)
-                // ctx.strokeStyle = 'rgba(0, 243, 255, 0.15)'; 
-
-                if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
-                    drawSprites(i, x, y, cellSize, gap, true);
-                } else if (gameState.chaosEvent === 'TINY') {
-                    drawSprites(i, x, y, cellSize, gap, false);
-                }
-
-                // MIRROR: draw target (green)
-                if (gameState.chaosEvent === 'MIRROR') {
-                    if (i === gameState.mirrorTarget) {
-                        ctx.fillStyle = '#00ff88';
-                        ctx.shadowBlur = 15; ctx.shadowColor = '#00ff88';
-                        ctx.fillRect(x + gap + 4, y + gap + 4, cellSize - gap * 2 - 8, cellSize - gap * 2 - 8);
-                        ctx.shadowBlur = 0;
+                if (gameState.chaosEvent === 'TINY') {
+                    if (i === gameState.activeIndex || i === gameState.chaosTarget2) {
+                        drawSprites(i, x, y, cellSize, gap, true);
+                    } else {
+                        drawSprites(i, x, y, cellSize, gap, false);
                     }
                 }
             }

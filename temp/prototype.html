@@ -788,10 +788,22 @@
             text-align: center;
             line-height: 1.6;
         }
+
+        .version-tag {
+            position: fixed;
+            bottom: 10px;
+            right: 15px;
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-family: 'Inter', sans-serif;
+            pointer-events: none;
+            z-index: 1000;
+        }
     </style>
 </head>
 
 <body>
+    <div class="version-tag">v1.1.0</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -801,10 +813,10 @@
         <div class="hud-top">
             <div style="display: flex; align-items: center;">
                 <button id="btn-quit" class="icon-btn"
-                    style="display: none; width: 62px; height: 62px; margin-right: 15px; border: none; background: transparent; padding: 0;"
+                    style="display: none; width: 62px; height: 62px; margin-right: 15px; border: none; background: transparent; padding: 0; outline: none;"
                     onclick="quitGame()">
-                    <img src="./button_return.jpg"
-                        style="width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.5));">
+                    <img src="button_return.jpg?v=1"
+                        style="width: 100%; height: 100%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.5)); display: block;">
                 </button>
                 <div id="mode-label" style="display: none;"></div>
             </div>
@@ -1391,7 +1403,7 @@
 
             const rect = canvas.getBoundingClientRect();
             const cx_raw = e.clientX || (e.touches && e.touches[0].clientX);
-            const cy_raw = e.clientY || (e.touches && e.touches[0].clientY);
+            const cy_raw = e.touches && e.touches[0].clientY || e.clientY;
             const x = (cx_raw - rect.left) * (canvas.width / rect.width / (window.devicePixelRatio || 1));
             const y = (cy_raw - rect.top) * (canvas.height / rect.height / (window.devicePixelRatio || 1));
 
@@ -1628,7 +1640,7 @@
             }
 
             if (gameState.mode === 'ADVENTURE' || gameState.mode === 'ENTERTAINMENT' || gameState.mode === 'SELECTION') {
-                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : (gameState.mode === 'SELECTION' ? 30 : 180);
+                const maxTime = gameState.mode === 'ADVENTURE' ? 60 : (gameState.mode === 'SELECTION' ? 30 : 120);
                 const fill = Math.max(0, (gameState.time / maxTime) * 100);
                 document.getElementById('status-fill').style.width = fill + '%';
             }
@@ -1683,7 +1695,7 @@
                 stage: mode === 'SELECTION' ? 2 : 1,
                 gridSize: (mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 5 : 4,
                 lives: 3,
-                time: mode === 'ENTERTAINMENT' ? 60 : (mode === 'SELECTION' ? 30 : 60), // Start full for better visual in ENT/ADV
+                time: mode === 'ENTERTAINMENT' ? 120 : (mode === 'SELECTION' ? 30 : 60), // Start full For ENT
                 activeIndex: -1,
                 startTime: 0,
                 isWaiting: false,

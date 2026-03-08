@@ -410,7 +410,6 @@
             </div>
             <div style="display: flex; gap: 8px;">
                 <button id="audio-toggle" class="icon-btn">🔊</button>
-                <button id="lang-toggle" class="icon-btn">EN</button>
             </div>
         </div>
         <div id="game-stats">
@@ -528,35 +527,6 @@
         };
 
         const I18N = {
-            EN: {
-                title: 'GRID SPEED',
-                adventure: 'ADVENTURE',
-                survival: 'SURVIVAL',
-                entertainment: 'ENTERTAINMENT',
-                best: 'BEST',
-                combo: 'COMBO',
-                clicks: 'LIFETIME CLICKS',
-                hiscore: 'HI-SCORE',
-                gameover: 'GAME OVER',
-                standby: 'STANDBY',
-                result: 'RESULT',
-                event_double: 'DOUBLE VISION!!',
-                event_speed: 'HYPER SPEED!!',
-                event_tiny: 'TINY SHAPES!!',
-                event_spin: 'GRID SPIN!!',
-                event_orbit: 'ORBIT RING!!',
-                selection: 'SELECTION MODE',
-                sel_double: 'DOUBLE VISION',
-                sel_speed: 'HYPER SPEED',
-                sel_tiny: 'TINY SHAPES',
-                sel_spin: 'GRID SPIN',
-                sel_orbit: 'ORBIT RING',
-                sel_mirror: 'MIRROR',
-                event_mirror: 'MIRROR MODE!!',
-                style_toggle: 'STYLE: ',
-                style_min: 'MINIMAL',
-                style_premium: 'PREMIUM'
-            },
             CN: {
                 title: '极速反应',
                 adventure: '冒险模式',
@@ -564,7 +534,6 @@
                 entertainment: '娱乐混战',
                 best: '最佳反应',
                 combo: '连击',
-                clicks: '总点击数',
                 hiscore: '最高分',
                 gameover: '游戏结束',
                 standby: '准备',
@@ -581,10 +550,7 @@
                 sel_spin: '空间扭曲',
                 sel_orbit: '轨道圆环',
                 sel_mirror: '奇妙模式',
-                event_mirror: '奇妙模式!!',
-                style_toggle: '风格: ',
-                style_min: '极简',
-                style_premium: '高级'
+                event_mirror: '奇妙模式!!'
             }
         };
 
@@ -1273,7 +1239,7 @@
             if (fixedType === 'ORBIT') startOrbitEvent();
             if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
 
-            const t = I18N[gameState.lang];
+            const t = I18N.CN;
             let label = mode === 'ADVENTURE' ? t.adventure :
                 mode === 'SURVIVAL' ? t.survival :
                     mode === 'SELECTION' ? t.selection : t.entertainment;
@@ -1335,11 +1301,11 @@
 
             const goModal = document.getElementById('game-over-modal');
             goModal.style.display = 'flex';
-            const t = I18N[gameState.lang];
+            const t = I18N.CN;
             document.getElementById('go-title').textContent = t.gameover;
             document.getElementById('go-score').textContent = t.result + ": " + gameState.score.toLocaleString();
-            document.getElementById('btn-play-again').textContent = t.lang === 'EN' ? 'PLAY AGAIN' : '再来一局';
-            document.getElementById('btn-go-home').textContent = t.lang === 'EN' ? 'HOME' : '回到主页';
+            document.getElementById('btn-play-again').textContent = '再来一局';
+            document.getElementById('btn-go-home').textContent = '回到主页';
             document.getElementById('mode-label').textContent = t.gameover;
         }
 
@@ -1375,7 +1341,7 @@
             overlay.style.display = 'flex';
             setTimeout(() => overlay.style.opacity = 1, 10);
 
-            const t = I18N[gameState.lang];
+            const t = I18N.CN;
             document.getElementById('menu-title').textContent = t.title;
             document.getElementById('mode-label').textContent = t.standby;
         }
@@ -1443,19 +1409,12 @@
 
         // --- LANGUAGE ---
         function initLang() {
-            const savedLang = localStorage.getItem('lang') || 'EN';
-            setLang(savedLang);
-        }
-
-        function setLang(lang) {
-            gameState.lang = lang;
-            localStorage.setItem('lang', lang);
-            document.getElementById('lang-toggle').textContent = lang;
+            gameState.lang = 'CN';
             applyLang();
         }
 
         function applyLang() {
-            const t = I18N[gameState.lang];
+            const t = I18N.CN;
             const titleEl = document.getElementById('menu-title');
             if (titleEl) titleEl.textContent = t.title;
             const advEl = document.getElementById('txt-adv');
@@ -1476,13 +1435,6 @@
                 selBtns[4].textContent = t.sel_orbit;
                 selBtns[5].textContent = t.sel_mirror;
             }
-            const backBtn = document.querySelector('.back-btn');
-            if (backBtn) backBtn.textContent = gameState.lang === 'EN' ? 'BACK' : '返回';
-
-            const limitC = document.getElementById('label-clicks');
-            if (limitC) limitC.textContent = gameState.lang === 'EN' ? 'LIFETIME CLICKS' : '总点击数';
-            const limitH = document.getElementById('label-hi-score');
-            if (limitH) limitH.textContent = gameState.lang === 'EN' ? 'HI-SCORE' : '最高分';
 
             // Stats labels
             const metaStats = document.getElementById('meta-stats').children;
@@ -1506,11 +1458,6 @@
             document.getElementById('sel-menu').style.display = 'none';
             document.querySelector('.btn-group').style.display = 'flex';
         }
-
-        document.getElementById('lang-toggle').addEventListener('click', () => {
-            setLang(gameState.lang === 'EN' ? 'CN' : 'EN');
-            updateUI();
-        });
 
         canvas.addEventListener('mousedown', handleInput);
         canvas.addEventListener('touchstart', (e) => { e.preventDefault(); handleInput(e); });

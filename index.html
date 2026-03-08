@@ -845,7 +845,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.4.0</div>
+    <div class="version-tag">v1.4.1</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -855,7 +855,7 @@
         <div class="hud-top">
             <div style="display: flex; align-items: center;">
                 <button id="btn-quit" class="icon-btn"
-                    style="display: none; width: 44px; height: 44px; margin-right: 15px; border: 2px solid var(--primary-color); border-radius: 50%; background: rgba(0,243,255,0.1); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--primary-color); box-shadow: 0 0 10px rgba(0,243,255,0.3);"
+                    style="display: none; width: 44px; height: 44px; margin-right: 15px; border: 2px solid var(--primary-color); border-radius: 50%; background: rgba(0,243,255,0.1); align-items: center; justify-content: center; cursor: pointer; color: var(--primary-color); box-shadow: 0 0 10px rgba(0,243,255,0.3);"
                     onclick="quitGame()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                         stroke-linecap="round" stroke-linejoin="round">
@@ -1581,8 +1581,8 @@
 
             showFeedback(`${rt}ms`, rt < 300 ? '#00ff88' : rt < 500 ? '#ffd700' : '#ff3366', x, y);
 
-            // Level Progression (Adventure)
-            if (gameState.mode === 'ADVENTURE' && gameState.hitCount % 15 === 0 && gameState.stage < 4) {
+            // Level Progression (Classic)
+            if (gameState.mode === 'CLASSIC' && gameState.hitCount % 15 === 0 && gameState.stage < 4) {
                 gameState.stage++;
                 gameState.gridSize = THEMES[gameState.stage].size;
                 document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
@@ -1756,13 +1756,13 @@
 
             // 3. UI Labels and visibility (Before Countdown)
             const t = I18N.CN;
-            let label = mode === 'ADVENTURE' ? t.adventure :
+            let label = mode === 'CLASSIC' ? t.adventure :
                 mode === 'SURVIVAL' ? t.survival :
                     mode === 'SELECTION' ? t.selection : t.entertainment;
             document.getElementById('mode-label').textContent = label;
             document.getElementById('mode-label').style.display = 'block';
             document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
-            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
+            document.getElementById('status-bar').style.display = (mode === 'CLASSIC' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
             document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
             document.getElementById('btn-quit').style.display = 'flex';
 
@@ -1793,7 +1793,7 @@
             if (fixedType === 'ORBIT') startOrbitEvent();
             if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
 
-            if (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();
+            if (mode === 'CLASSIC' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();
             if (mode === 'ENTERTAINMENT') startChaosManager();
 
             draw();

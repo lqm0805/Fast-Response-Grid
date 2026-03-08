@@ -845,7 +845,7 @@
 </head>
 
 <body>
-    <div class="version-tag">v1.4.1</div>
+    <div class="version-tag">v1.5.0</div>
     <div class="cyber-bg">
         <div class="cyber-glow-1"></div>
         <div class="cyber-glow-2"></div>
@@ -866,7 +866,11 @@
                 <div id="mode-label" style="display: none;"></div>
             </div>
             <div id="lives-container" style="display: none;">
-                <span class="heart">❤</span><span class="heart">❤</span><span class="heart">❤</span>
+                <span class="heart">❤</span>
+                <span class="heart">❤</span>
+                <span class="heart">❤</span>
+                <span class="heart">❤</span>
+                <span class="heart">❤</span>
             </div>
         </div>
         <div id="game-stats">
@@ -1287,6 +1291,13 @@
                 const bonus = 1000 + gameState.combo * 200;
                 gameState.score += bonus;
                 gameState.combo++;
+
+                // Reward: 5 hits -> +2s
+                if (gameState.combo % 5 === 0) {
+                    gameState.time = Math.min(60, gameState.time + 2);
+                    showBadge('+2s BONUS!');
+                }
+
                 showBadge(`+${bonus}`);
                 showFeedback('ORBIT HIT!', THEMES[gameState.stage].color);
                 sounds.hit(100);
@@ -1305,8 +1316,8 @@
             if (gameState.fixedChaos === 'ORBIT') {
                 if (wasMiss) {
                     gameState.combo = 0;
-                    gameState.time = Math.max(0, gameState.time - 5);
-                    showBadge('-5s');
+                    gameState.time = Math.max(0, gameState.time - 3);
+                    showBadge('-3s');
                     sounds.miss();
                     showFeedback('MISS!', '#ff3b3b');
                     document.body.classList.add('error-flash');
@@ -1589,6 +1600,13 @@
                 showBadge(`LEVEL ${gameState.stage}`);
             }
 
+            // Survival: Reward 1 life every 30 combo hits (max 5)
+            if (gameState.mode === 'SURVIVAL' && gameState.combo > 0 && gameState.combo % 30 === 0 && gameState.lives < 5) {
+                gameState.lives++;
+                updateLives();
+                showBadge('+1 LIFE!');
+            }
+
             updateUI();
 
             // No standard time rewards in v1.2.0 (except Mirror mode handled above)
@@ -1614,10 +1632,13 @@
                 gameState.lives--;
                 updateLives();
                 if (gameState.lives <= 0) gameOver();
-            } else if (gameState.mode === 'ENTERTAINMENT') {
-                gameState.time = Math.max(0, gameState.time - 5);
-                showBadge('-5s');
             } else {
+                // Determine penalty
+                let penalty = 5; // Default
+                if (gameState.chaosEvent === 'ORBIT' || gameState.chaosEvent === 'MIRROR') penalty = 3;
+
+                gameState.time = Math.max(0, gameState.time - penalty);
+                showBadge(`-${penalty}s`);
                 gameState.score = Math.max(0, gameState.score - 1000);
             }
 
@@ -1741,16 +1762,24 @@
                 totalHits: gameState.totalHits || 0,
                 muted: gameState.muted,
                 lang: gameState.lang,
-                chaosEvent: fixedType === 'ORBIT' ? null : fixedType,
+                chaosEvent: (mode === 'ENTERTAINMENT')
+                    ? ['DOUBLE', 'SPEED', 'TINY', 'SPIN', 'ORBIT', 'MIRROR'][Math.floor(Math.random() * 6)]
+                    : (fixedType === 'ORBIT' ? null : fixedType),
                 pendingChaosStart: null,
                 pendingChaosEnd: false,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
-                orbitActive: fixedType === 'ORBIT', // Set correctly for Orbit mode visual
-                isCountDown: true, // Tracking countdown state
+                orbitActive: false, // Will be set in activation below
+                isCountDown: true,
                 orbitAngle: 0,
                 orbitSpeed: 0.05
             };
+
+            // Mirror mode specific override
+            if (gameState.chaosEvent === 'ORBIT') {
+                gameState.orbitActive = true;
+                gameState.chaosEvent = null;
+            }
 
             updateGlassTiles();
 
@@ -1790,8 +1819,8 @@
             gameState.active = true;
             gs.style.opacity = '1'; // Full visibility
 
-            if (fixedType === 'ORBIT') startOrbitEvent();
-            if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
+            if (gameState.chaosEvent === 'ORBIT' || fixedType === 'ORBIT') startOrbitEvent();
+            if (gameState.chaosEvent === 'SPIN' || fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
 
             if (mode === 'CLASSIC' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();
             if (mode === 'ENTERTAINMENT') startChaosManager();
@@ -1868,6 +1897,7 @@
         function quitGame() {
             gameState.active = false;
             gameState.isCountDown = false;
+            hideSelMenu(); // Fix navigation bug
             document.getElementById('countdown').style.display = 'none';
             gameState.orbitActive = false;
             gameState.trapIndex = -1;

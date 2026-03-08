@@ -338,24 +338,25 @@
         }
 
         .menu-title {
-            font-size: clamp(2.2rem, 10vw, 3.5rem);
+            font-size: clamp(2.5rem, 12vw, 4.5rem);
             font-weight: 900;
-            margin-bottom: 32px;
-            letter-spacing: clamp(6px, 3vw, 12px);
+            margin-bottom: 30px;
+            letter-spacing: clamp(6px, 4vw, 15px);
             white-space: nowrap;
             background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            filter: drop-shadow(0 0 25px rgba(0, 243, 255, 1)) drop-shadow(0 0 50px rgba(189, 0, 255, 0.8));
+            filter: drop-shadow(0 0 30px rgba(0, 243, 255, 1)) drop-shadow(0 0 60px rgba(189, 0, 255, 0.8));
+            text-transform: uppercase;
         }
 
         /* ===== 模块7：霓虹按钮系统 ===== */
         .btn-group {
             display: flex;
             flex-direction: column;
-            gap: 14px;
-            width: min(90%, 280px);
+            gap: 12px;
+            width: min(85%, 240px);
         }
 
         button {
@@ -1475,9 +1476,16 @@
             document.getElementById('overlay').style.opacity = 0;
             setTimeout(() => document.getElementById('overlay').style.display = 'none', 400);
 
-            // Init State first so the correct grid renders during countdown
+            // 1. Expand HUD IMMEDIATELY to reserve space and prevent layout shift
+            const gs = document.getElementById('game-stats');
+            gs.style.maxHeight = '300px';
+            // Keep content invisible during countdown if desired, but here we show it to be 1:1 consistent
+            gs.style.visibility = 'visible';
+            gs.style.opacity = '0.3'; // Faded during countdown
+
+            // 2. Init State fully (including orbitActive) for pre-render
             gameState = {
-                active: false, // not active yet, just init for rendering
+                active: false,
                 mode: mode,
                 score: 0,
                 combo: 0,
@@ -1498,15 +1506,28 @@
                 pendingChaosEnd: false,
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
-                orbitActive: false,
+                orbitActive: fixedType === 'ORBIT', // Set correctly for Orbit mode visual
                 orbitAngle: 0,
                 orbitSpeed: 0.05
             };
 
-            // Draw the correct grid layout immediately
-            draw();
+            // 3. UI Labels and visibility (Before Countdown)
+            const t = I18N.CN;
+            let label = mode === 'ADVENTURE' ? t.adventure :
+                mode === 'SURVIVAL' ? t.survival :
+                    mode === 'SELECTION' ? t.selection : t.entertainment;
+            document.getElementById('mode-label').textContent = label;
+            document.getElementById('mode-label').style.display = 'block';
+            document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
+            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
+            document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
+            document.getElementById('btn-quit').style.display = 'flex';
 
-            // Countdown
+            updateLives();
+            updateUI();
+            draw(); // Draw immediately so user sees the correct mode layout during countdown
+
+            // 4. Countdown
             const cd = document.getElementById('countdown');
             cd.style.display = 'block';
             for (let i = 3; i > 0; i--) {
@@ -1518,29 +1539,12 @@
             await new Promise(r => setTimeout(r, 400));
             cd.style.display = 'none';
 
-            // Now activate game
+            // 5. Final Activation
             gameState.active = true;
+            gs.style.opacity = '1'; // Full visibility
 
             if (fixedType === 'ORBIT') startOrbitEvent();
             if (fixedType === 'SPIN') document.body.style.transform = 'rotate(5deg)';
-
-            const t = I18N.CN;
-            let label = mode === 'ADVENTURE' ? t.adventure :
-                mode === 'SURVIVAL' ? t.survival :
-                    mode === 'SELECTION' ? t.selection : t.entertainment;
-            document.getElementById('mode-label').textContent = label;
-            document.getElementById('mode-label').style.display = 'block';
-            document.getElementById('lives-container').style.display = mode === 'SURVIVAL' ? 'flex' : 'none';
-            document.getElementById('status-bar').style.display = (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') ? 'block' : 'none';
-            document.documentElement.style.setProperty('--stage-color', THEMES[gameState.stage].color);
-            document.getElementById('btn-quit').style.display = 'flex';
-            const gs = document.getElementById('game-stats');
-            gs.style.maxHeight = '300px';
-            gs.style.visibility = 'visible';
-            gs.style.opacity = '1';
-
-            updateLives();
-            updateUI();
 
             if (mode === 'ADVENTURE' || mode === 'ENTERTAINMENT' || mode === 'SELECTION') startTimer();
             if (mode === 'ENTERTAINMENT') startChaosManager();

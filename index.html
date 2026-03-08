@@ -1507,6 +1507,7 @@
                 chaosTarget2: -1,
                 fixedChaos: fixedType,
                 orbitActive: fixedType === 'ORBIT', // Set correctly for Orbit mode visual
+                isCountDown: true, // Tracking countdown state
                 orbitAngle: 0,
                 orbitSpeed: 0.05
             };
@@ -1531,13 +1532,17 @@
             const cd = document.getElementById('countdown');
             cd.style.display = 'block';
             for (let i = 3; i > 0; i--) {
+                if (!gameState.isCountDown) return;
                 cd.textContent = i;
                 sounds.count(440 + (3 - i) * 220);
                 await new Promise(r => setTimeout(r, 700));
             }
+            if (!gameState.isCountDown) return;
             cd.textContent = "GO!"; sounds.count(1320);
             await new Promise(r => setTimeout(r, 400));
+            if (!gameState.isCountDown) return;
             cd.style.display = 'none';
+            gameState.isCountDown = false;
 
             // 5. Final Activation
             gameState.active = true;
@@ -1620,6 +1625,8 @@
 
         function quitGame() {
             gameState.active = false;
+            gameState.isCountDown = false;
+            document.getElementById('countdown').style.display = 'none';
             gameState.orbitActive = false;
             gameState.trapIndex = -1;
             gameState.mirrorTarget = -1;
